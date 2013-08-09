@@ -13,26 +13,232 @@
 #endif
 
 #pragma data_seg(".data")
-HHOOK		g_hHookMouse				= NULL;	// 安装的鼠标钩子句柄
-HHOOK		g_hHookKeybord				= NULL;	// 安装的鼠标钩子句柄
-HHOOK		g_hHookKeybordLL			= NULL;	// 安装的鼠标钩子句柄
-HHOOK		g_hHookGetMessage			= NULL;	// 安装的鼠标钩子句柄
-HHOOK		g_hHookCallWndProc			= NULL;	// 安装的鼠标钩子句柄
-HHOOK		g_hHookCBT					= NULL;	// 安装的鼠标钩子句柄
-HHOOK		g_hHookMouseLL				= NULL;	// 安装的鼠标钩子句柄
-HHOOK		g_hHookShell				= NULL;	// 安装的鼠标钩子句柄
-HHOOK		g_hHookJournalRecord		= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookMouse				= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookKeybord				= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookKeybordLL			= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookGetMessage			= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookCallWndProc			= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookCBT					= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookMouseLL				= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookShell				= NULL;	// 安装的鼠标钩子句柄
+static HHOOK		g_hHookJournalRecord		= NULL;	// 安装的鼠标钩子句柄
 
-HWND		g_hChildren[4096] = {0};
-long		g_numChildren = 0;
+static HWND		g_hChildren[4096] = {0};
+static long		g_numChildren = 0;
 
-FILE*		g_HookLog			= NULL;
-HINSTANCE	g_hinstDll	= NULL; // DLL实例句柄
-HWND		g_hWndTag	= NULL;	//注入的EXE窗体句柄
+static FILE*		g_HookLog			= NULL;
+static HINSTANCE	g_hinstDll	= NULL; // DLL实例句柄
+static HWND		g_hWndTag	= NULL;	//注入的EXE窗体句柄
 #pragma data_seg()
-//#pragma comment(linker, "/SECTION:.Hookdata,RWS")
+#pragma comment(linker, "/SECTION:.data,rws")
 
 
+
+//////////////////////////////////////////////////////////////////////////////////////
+#define HOOK_NEED_CHECK 0
+#define HOOK_CAN_WRITE	1
+#define HOOK_ONLY_READ	2
+
+#define BUFFERLEN		7
+
+typedef struct _tagApiHookStruct
+{
+	wchar_t*  lpszApiModuleName;
+	LPSTR  lpszApiName;
+	DWORD  dwApiOffset;
+	LPVOID lpWinApiProc;
+	BYTE   WinApiFiveByte[7];
+
+	wchar_t*  lpszHookApiModuleName;
+	LPSTR  lpszHookApiName;
+	LPVOID lpHookApiProc;
+	BYTE   HookApiFiveByte[7];
+
+	HINSTANCE hInst;
+
+	BYTE   WinApiBakByte[7];
+}
+APIHOOKSTRUCT, *LPAPIHOOKSTRUCT;
+
+APIHOOKSTRUCT g_GetLocalTimeHook = {
+	L"Kernel32.dll",
+	"GetLocalTime",
+	0,
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	NULL,
+	"NHGetLocalTime",
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	0,
+	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+};
+
+FARPROC WINAPI NHGetFuncAddress(HINSTANCE hInst, wchar_t* lpMod, char* lpFunc)
+{
+	HMODULE hMod;
+	FARPROC procFunc;
+
+	if (NULL != lpMod)
+	{
+		hMod=GetModuleHandle(lpMod);
+		procFunc = GetProcAddress(hMod,lpFunc);
+	}
+	else
+	{
+		procFunc = GetProcAddress(hInst,lpFunc);
+
+	}
+
+	return  procFunc;
+}
+
+void MakeJMPCode(LPBYTE lpJMPCode, LPVOID lpCodePoint)
+{
+	BYTE temp;
+	WORD wHiWord = HIWORD(lpCodePoint);
+	WORD wLoWord = LOWORD(lpCodePoint);
+	WORD wCS;
+
+	_asm						// 取當前選擇符﹒
+	{
+		push ax;
+		push cs;
+		pop  ax;
+		mov  wCS, ax;
+		pop  ax;
+	};
+
+	lpJMPCode[0] = 0xea;		// 填入 JMP 指令的機器碼﹒
+
+	temp = LOBYTE(wLoWord);		// -------------------------
+	lpJMPCode[1] = temp;
+	temp = HIBYTE(wLoWord);
+	lpJMPCode[2] = temp;		// 填入地址﹒在內存中的順序為；
+	temp = LOBYTE(wHiWord);		// Point: 0x1234
+	lpJMPCode[3] = temp;		// 內存： 4321
+	temp = HIBYTE(wHiWord);
+	lpJMPCode[4] = temp;		// -------------------------
+
+	temp = LOBYTE(wCS);			// 填入選擇符﹒
+	lpJMPCode[5] = temp;
+	temp = HIBYTE(wCS);
+	lpJMPCode[6] = temp;
+
+	return;
+}
+
+void HookWin32Api(LPAPIHOOKSTRUCT lpApiHook, int nSysMemStatus)
+{
+
+	DWORD  dwReserved;
+	DWORD  dwTemp;
+	BYTE   bWin32Api[5];
+
+	bWin32Api[0] = 0x00; 
+
+	//TextOut(GetDC(GetActiveWindow()),2,15,"here",20);
+
+	// 取得被攔截函數地址﹒
+	if(lpApiHook->lpWinApiProc == NULL)
+	{	
+		lpApiHook->lpWinApiProc = (LPVOID)NHGetFuncAddress(lpApiHook->hInst, lpApiHook->lpszApiModuleName,lpApiHook->lpszApiName);
+		if (lpApiHook->dwApiOffset != 0)
+			lpApiHook->lpWinApiProc = (LPVOID)((DWORD)lpApiHook->lpWinApiProc + lpApiHook->dwApiOffset);
+	}
+	// 取得替代函數地址﹒
+	if(lpApiHook->lpHookApiProc == NULL)
+	{
+		lpApiHook->lpHookApiProc = (LPVOID)NHGetFuncAddress(lpApiHook->hInst,
+			lpApiHook->lpszHookApiModuleName,lpApiHook->lpszHookApiName);
+	}
+	// 形成 JMP 指令﹒
+	if (lpApiHook->HookApiFiveByte[0] == 0x00)
+	{
+		MakeJMPCode(lpApiHook->HookApiFiveByte, lpApiHook->lpHookApiProc);
+	}
+
+	if (!VirtualProtect(lpApiHook->lpWinApiProc, 16, PAGE_READWRITE,
+		&dwReserved))
+	{
+		MessageBox(NULL, L"VirtualProtect-READWRITE", NULL, MB_OK);
+		return;
+	}
+
+	if (nSysMemStatus == HOOK_NEED_CHECK)
+	{
+		memcpy(lpApiHook->lpWinApiProc, (LPVOID)lpApiHook->HookApiFiveByte,BUFFERLEN);
+	}
+	else
+	{
+		if (lpApiHook->WinApiFiveByte[0] == 0x00)			// 判斷是否已經攔截﹒
+		{
+			// 否﹒
+			// 備份 API 函數頭五個字節﹒
+			memcpy(lpApiHook->WinApiFiveByte,(LPVOID)lpApiHook->lpWinApiProc,BUFFERLEN);
+			// 判斷是否重複攔截﹒(即判斷備份的頭五個字節是否為形成的JMP指令)
+			if (strncmp((const char*)lpApiHook->WinApiFiveByte, 
+				(const char*)lpApiHook->HookApiFiveByte, BUFFERLEN) == 0)
+			{
+				// 恢復備份的字節﹒
+				memcpy(lpApiHook->WinApiFiveByte,(LPVOID)lpApiHook->WinApiBakByte,BUFFERLEN);
+			}
+		}
+		else
+		{
+			// 是﹒
+			memcpy(bWin32Api,(LPVOID)lpApiHook->lpWinApiProc,BUFFERLEN);
+		}
+
+		if (strncmp((const char*)bWin32Api, (const char*)lpApiHook->HookApiFiveByte,
+			BUFFERLEN) != 0)
+		{
+			// 將 JMP 指定填入 API 函數的頭﹒
+			memcpy(lpApiHook->lpWinApiProc, (LPVOID)lpApiHook->HookApiFiveByte,BUFFERLEN);
+		}
+	}
+
+	if (!VirtualProtect(lpApiHook->lpWinApiProc, 16, dwReserved, &dwTemp))
+	{
+		MessageBox(NULL, L"VirtualProtect-RESTORE", NULL, MB_OK);
+		return;
+	}
+
+}
+
+DLLEXPORT void RestoreWin32Api(LPAPIHOOKSTRUCT lpApiHook, int nSysMemStatus)
+{
+	DWORD dwReserved;
+	DWORD dwTemp;
+
+	if (lpApiHook->lpWinApiProc == NULL)
+		return;
+
+	if (!VirtualProtect(lpApiHook->lpWinApiProc, 16, PAGE_READWRITE,
+		&dwReserved))
+	{
+		MessageBox(NULL, L"VirtualProtect-READWRITE", NULL, MB_OK);
+		return;
+	}
+	memcpy(lpApiHook->lpWinApiProc,(LPVOID)lpApiHook->WinApiFiveByte,BUFFERLEN);
+	if (!VirtualProtect(lpApiHook->lpWinApiProc, 16, dwReserved, &dwTemp))
+	{
+		MessageBox(NULL, L"VirtualProtect-RESTORE", NULL, MB_OK);
+		return;
+	}
+}
+
+DLLEXPORT VOID WINAPI NHGetLocalTime(LPSYSTEMTIME lpSystemTime)
+{
+	// restore
+	RestoreWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
+
+	::GetLocalTime(lpSystemTime);
+	lpSystemTime->wYear -= 1;
+
+	//
+	HookWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
+}
 //////////////////////////////////////////////////////////////////////////////////////
 DLLEXPORT void OutputLastError(const wchar_t* errorInfo)
 {
@@ -354,19 +560,19 @@ DLLEXPORT void InitHook(HWND hwnd)
 	dwThreadId = theadID;
 	dwThreadId = 0;
 
-	g_hHookMouse = SetWindowsHookEx(WH_MOUSE, MouseProc, hmod,dwThreadId);
-	if (g_hHookMouse == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookMouse error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-
 	g_hHookKeybord = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, hmod,dwThreadId);
 	if (g_hHookKeybord == NULL)
 	{
 		wchar_t buf[256] = {0};
 		swprintf(buf, L"SetWindowsHookEx g_hHookKeybord error %p,%d", hmod, dwThreadId);
+		OutputLastError(buf);
+	}
+/*
+	g_hHookMouse = SetWindowsHookEx(WH_MOUSE, MouseProc, hmod,dwThreadId);
+	if (g_hHookMouse == NULL)
+	{
+		wchar_t buf[256] = {0};
+		swprintf(buf, L"SetWindowsHookEx g_hHookMouse error %p,%d", hmod, dwThreadId);
 		OutputLastError(buf);
 	}
 
@@ -425,6 +631,9 @@ DLLEXPORT void InitHook(HWND hwnd)
 		swprintf(buf, L"SetWindowsHookEx g_hHookJournalRecord error %p,%d", hmod, dwThreadId);
 		OutputLastError(buf);
 	}
+*/
+
+	HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
 }
 
 DLLEXPORT void UnInitHook()
@@ -565,6 +774,19 @@ DLLEXPORT void UnInitHook()
 
 BOOL APIENTRY DllMain( HMODULE hModule,DWORD  ul_reason_for_call,LPVOID lpReserved)
 {
+	switch (ul_reason_for_call) 
+	{
+	case DLL_PROCESS_ATTACH:
+		g_GetLocalTimeHook.hInst = hModule;
+		break;
+	case DLL_THREAD_ATTACH:
+		break;
+	case DLL_THREAD_DETACH:
+		break;
+	case DLL_PROCESS_DETACH:
+		RestoreWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
+		break;
+	}
     return TRUE;
 }
 

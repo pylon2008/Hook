@@ -19,7 +19,9 @@ EXPORTS
 	InitHook
 	UnInitHook
 	JournalRecordProc
+	NHGetLocalTime
 
 SECTIONS
 	.data READ WRITE SHARED
+	g_hHookKeybord
 

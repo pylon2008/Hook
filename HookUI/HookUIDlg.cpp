@@ -57,6 +57,7 @@ CHookUIDlg::CHookUIDlg(CWnd* pParent /*=NULL*/)
 void CHookUIDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_EDIT_LOCALTIME, m_editLocaltime);
 }
 
 BEGIN_MESSAGE_MAP(CHookUIDlg, CDialog)
@@ -66,6 +67,7 @@ BEGIN_MESSAGE_MAP(CHookUIDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDC_BUTTON_INIT_HOOK, &CHookUIDlg::OnBnClickedButtonInitHook)
 	ON_BN_CLICKED(IDC_BUTTON_UNINIT_HOOK, &CHookUIDlg::OnBnClickedButtonUninitHook)
+	ON_BN_CLICKED(IDC_BUTTON_GETTIME, &CHookUIDlg::OnBnClickedButtonGettime)
 END_MESSAGE_MAP()
 
 
@@ -185,4 +187,14 @@ void CHookUIDlg::OnBnClickedButtonUninitHook()
 		::FreeLibrary(m_hDLL);
 		m_hDLL = 0;
 	}
+}
+
+void CHookUIDlg::OnBnClickedButtonGettime()
+{
+	// TODO: Add your control notification handler code here
+	SYSTEMTIME time;
+	::GetLocalTime(&time);
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"%d-%d-%d-%d-%d-%d-%d-%d", time.wYear, time.wMonth, time.wDay, time.wDayOfWeek, time.wHour, time.wMinute, time.wMinute, time.wMilliseconds);
+	::MessageBox(0, buf, 0, 0);
 }

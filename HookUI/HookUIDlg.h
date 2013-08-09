@@ -32,4 +32,8 @@ protected:
 public:
 	afx_msg void OnBnClickedButtonInitHook();
 	afx_msg void OnBnClickedButtonUninitHook();
+private:
+	CEdit m_editLocaltime;
+public:
+	afx_msg void OnBnClickedButtonGettime();
 };

@@ -633,7 +633,7 @@ DLLEXPORT void InitHook(HWND hwnd)
 	}
 */
 
-	HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
+	//HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
 }
 
 DLLEXPORT void UnInitHook()
@@ -778,6 +778,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,DWORD  ul_reason_for_call,LPVOID lpReserv
 	{
 	case DLL_PROCESS_ATTACH:
 		g_GetLocalTimeHook.hInst = hModule;
+		HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
 		break;
 	case DLL_THREAD_ATTACH:
 		break;

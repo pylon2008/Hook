@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HookDll", "HookDll\HookDll.vcproj", "{86F6A6D2-663E-4BC5-AA62-3EF28A60D089}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HookUI", "HookUI\HookUI.vcproj", "{01D35013-C939-4F98-935A-AC2950F474B8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{86F6A6D2-663E-4BC5-AA62-3EF28A60D089} = {86F6A6D2-663E-4BC5-AA62-3EF28A60D089}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{86F6A6D2-663E-4BC5-AA62-3EF28A60D089}.Debug|Win32.ActiveCfg = Debug|Win32
+		{86F6A6D2-663E-4BC5-AA62-3EF28A60D089}.Debug|Win32.Build.0 = Debug|Win32
+		{86F6A6D2-663E-4BC5-AA62-3EF28A60D089}.Release|Win32.ActiveCfg = Release|Win32
+		{86F6A6D2-663E-4BC5-AA62-3EF28A60D089}.Release|Win32.Build.0 = Release|Win32
+		{01D35013-C939-4F98-935A-AC2950F474B8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{01D35013-C939-4F98-935A-AC2950F474B8}.Debug|Win32.Build.0 = Debug|Win32
+		{01D35013-C939-4F98-935A-AC2950F474B8}.Release|Win32.ActiveCfg = Release|Win32
+		{01D35013-C939-4F98-935A-AC2950F474B8}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,25 @@
+LIBRARY	"HookDll"
+
+EXPORTS
+	OutputLastError
+	OutputHookLog
+	EnumChildWindowsProc
+	GetAllChildrenWnd
+	FilterWnd
+	GetWindowNameByHandle
+	EnumAllWindowSnapshot
+	MouseProc
+	KeyboardProc
+	KeyboardLLProc
+	GetMessageProc
+	CallWndProcProc
+	MouseLLProc
+	CBTProc
+	ShellProc
+	InitHook
+	UnInitHook
+	JournalRecordProc
+
+SECTIONS
+	.data READ WRITE SHARED
+

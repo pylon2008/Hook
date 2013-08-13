@@ -16,10 +16,13 @@ EXPORTS
 	MouseLLProc
 	CBTProc
 	ShellProc
-	InitHook
+	In
 	UnInitHook
 	JournalRecordProc
 	NHGetLocalTime
+	NHGetSystemTime
+	NHGetSystemTimeAsFileTime
+	NHCreateProcessW
 
 SECTIONS
 	.data READ WRITE SHARED

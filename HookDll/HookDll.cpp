@@ -12,6 +12,8 @@
 #pragma managed(push, off)
 #endif
 
+#define HOOK_DLL_NAME L"1"
+
 #pragma data_seg(".data")
 static HHOOK		g_hHookMouse				= NULL;	// 安装的鼠标钩子句柄
 static HHOOK		g_hHookKeybord				= NULL;	// 安装的鼠标钩子句柄
@@ -22,7 +24,8 @@ static HHOOK		g_hHookCBT					= NULL;	// 安装的鼠标钩子句柄
 static HHOOK		g_hHookMouseLL				= NULL;	// 安装的鼠标钩子句柄
 static HHOOK		g_hHookShell				= NULL;	// 安装的鼠标钩子句柄
 static HHOOK		g_hHookJournalRecord		= NULL;	// 安装的鼠标钩子句柄
-
+bool g_TimeProc = true;
+bool g_IsTimeSetByHook = false;
 static HWND		g_hChildren[4096] = {0};
 static long		g_numChildren = 0;
 
@@ -32,6 +35,136 @@ static HWND		g_hWndTag	= NULL;	//注入的EXE窗体句柄
 #pragma data_seg()
 #pragma comment(linker, "/SECTION:.data,rws")
 
+//////////////////////////////////////////////////////////////////////////////////////
+DLLEXPORT void OutputLastError(const wchar_t* errorInfo)
+{
+	DWORD lastError = GetLastError();
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"%s,LastError:%d", errorInfo, lastError);
+	MessageBox(0,buf,0,0);
+}
+
+DLLEXPORT void OutputHookLog(const wchar_t* info)
+{
+	if (g_HookLog!=NULL)
+	{
+		char cbuf[1024] = {0};
+		WideCharToMultiByte(CP_ACP, NULL,
+			info, -1,
+			cbuf,
+			sizeof(cbuf),NULL,NULL);
+		fprintf(g_HookLog, "%d,%d,%s", ::GetCurrentProcessId(), ::GetCurrentThreadId(), cbuf);
+		fflush(g_HookLog);
+	}
+}
+
+DLLEXPORT BOOL CALLBACK EnumChildWindowsProc( HWND hWnd, LPARAM lParam )
+{
+	g_hChildren[g_numChildren++] = hWnd;
+	return TRUE;
+}
+
+DLLEXPORT void GetAllChildrenWnd(HWND hwnd)
+{
+	if (hwnd != NULL)
+	{
+		memset(g_hChildren, 0, sizeof(g_hChildren));
+		g_numChildren = 0;
+		g_hChildren[g_numChildren++] = hwnd;
+		EnumChildWindows(hwnd, EnumChildWindowsProc,0);
+	}
+}
+
+DLLEXPORT bool FilterWnd(HWND hwnd)
+{
+	return true;
+	HWND* findResult = std::find(&g_hChildren[0], &g_hChildren[g_numChildren], hwnd);
+	return findResult==&g_hChildren[g_numChildren];
+}
+
+DLLEXPORT bool FilterCode(int nCode)
+{
+	return true;
+	return nCode>=0;
+}
+
+DLLEXPORT void GetWindowNameByHandle(HWND hwnd, wchar_t* dest, int destSize)
+{
+	//HWND children = hwnd;
+	//HWND parentWnd = children;
+	//while (1)
+	//{
+	//	parentWnd = ::GetParent(children);
+	//	if (parentWnd == NULL)
+	//	{
+	//		break;
+	//	}
+	//	children = parentWnd;
+	//}
+	//wchar_t childrenName[256] = {0};
+	//wchar_t parentName[256] = {0};
+	//::GetWindowTextW(hwnd, childrenName, sizeof(childrenName));
+	//::GetWindowTextW(children, parentName, sizeof(parentName));
+	//swprintf(dest, L"%s-%s", childrenName, parentName);
+	//return;
+
+	DWORD dwProcId;
+	DWORD theadID = ::GetWindowThreadProcessId(hwnd, &dwProcId);
+
+	PROCESSENTRY32 pe;
+	pe.dwSize = sizeof( PROCESSENTRY32 );
+	// 创建快照句柄
+	HANDLE hSnapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	// 先搜索系统中第一个进程的信息
+	::Process32First(hSnapshot, &pe);
+	// 下面对系统中的所有进程进行枚举，并保存其信息
+	do
+	{
+		if (pe.th32ProcessID == dwProcId)
+		{
+			swprintf(dest, L"%d-%d-%s",dwProcId, theadID, pe.szExeFile);
+			//memcpy(dest, pe.szExeFile, wcslen(pe.szExeFile)*sizeof(wchar_t));
+			break;
+		}
+	}
+	while (Process32Next(hSnapshot, &pe));
+	DWORD lastError = ::GetLastError();
+	if (lastError == ERROR_NO_MORE_FILES)
+	{
+		int a = 0;
+		a = 0;
+	}
+	// 关闭快照句柄
+	CloseHandle(hSnapshot);
+}
+
+DLLEXPORT void EnumAllWindowSnapshot()
+{
+	PROCESSENTRY32 pe;
+	pe.dwSize = sizeof( PROCESSENTRY32 );
+	// 创建快照句柄
+	HANDLE hSnapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	// 先搜索系统中第一个进程的信息
+	::Process32First(hSnapshot, &pe);
+	// 下面对系统中的所有进程进行枚举，并保存其信息
+	do
+	{
+		wchar_t buf[1024] = {0};
+		swprintf(buf, L"%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\r\n", pe.cntThreads, pe.cntUsage, pe.dwFlags, pe.dwSize, pe.pcPriClassBase, 
+			pe.th32DefaultHeapID, pe.th32ModuleID,pe.th32ParentProcessID, pe.th32ProcessID, pe.szExeFile);
+		OutputHookLog(buf);
+	}
+	while (Process32Next(hSnapshot, &pe));
+	DWORD lastError = ::GetLastError();
+	if (lastError == ERROR_NO_MORE_FILES)
+	{
+		int a = 0;
+		a = 0;
+	}
+	// 关闭快照句柄
+	CloseHandle(hSnapshot);
+}
+//////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -73,6 +206,49 @@ APIHOOKSTRUCT g_GetLocalTimeHook = {
 	0,
 	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
 };
+
+APIHOOKSTRUCT g_GetSystemTimeHook = {
+	L"Kernel32.dll",
+	"GetSystemTime",
+	0,
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	NULL,
+	"NHGetSystemTime",
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	0,
+	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+};
+
+APIHOOKSTRUCT g_GetSystemTimeAsFileTimeHook = {
+	L"Kernel32.dll",
+	"GetSystemTimeAsFileTime",
+	0,
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	NULL,
+	"NHGetSystemTimeAsFileTime",
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	0,
+	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+};
+
+APIHOOKSTRUCT g_CreateProcessWHook = {
+	L"Kernel32.dll",
+	"CreateProcessW",
+	0,
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	NULL,
+	"NHCreateProcessW",
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	0,
+	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+};
+
 
 FARPROC WINAPI NHGetFuncAddress(HINSTANCE hInst, wchar_t* lpMod, char* lpFunc)
 {
@@ -228,143 +404,325 @@ DLLEXPORT void RestoreWin32Api(LPAPIHOOKSTRUCT lpApiHook, int nSysMemStatus)
 	}
 }
 
+void TimeAdd1Year(SYSTEMTIME& time)
+{
+	SYSTEMTIME backupTime;
+	::GetSystemTime(&backupTime);
+
+	time.wYear += 1;
+	::SetSystemTime(&time);
+	::GetSystemTime(&time);
+
+	::SetSystemTime(&backupTime);
+}
+
+void TimeSub1Year(SYSTEMTIME& time)
+{
+	return;
+	g_TimeProc = false;
+	/*SYSTEMTIME backupTime;
+	::GetLocalTime(&backupTime);
+
+	time.wYear -= 1;
+	::SetLocalTime(&time);
+	::GetLocalTime(&time);
+
+	::SetLocalTime(&backupTime);*/
+
+	SYSTEMTIME backupTime;
+	::GetSystemTime(&backupTime);
+
+	time.wYear -= 1;
+	::SetSystemTime(&time);
+	::GetSystemTime(&time);
+
+	//TimeAdd1Year(backupTime);
+	::SetSystemTime(&backupTime);
+
+
+	/*LONG bias = -60 * 24 * 365*10; 
+	TIME_ZONE_INFORMATION DEFAULT_TIME_ZONE_INFORMATION = {-bias};
+	SystemTimeToTzSpecificLocalTime(&DEFAULT_TIME_ZONE_INFORMATION, &time, &time);*/
+	g_TimeProc = true;
+}
+
 DLLEXPORT VOID WINAPI NHGetLocalTime(LPSYSTEMTIME lpSystemTime)
 {
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+
 	// restore
 	RestoreWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
 
 	::GetLocalTime(lpSystemTime);
-	lpSystemTime->wYear -= 1;
+	if (g_TimeProc == true)
+	{
+		TimeSub1Year(*lpSystemTime);
+	}
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHGetLocalTime: %s,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n", hmod, returnAddr, lpSystemTime->wYear, lpSystemTime->wMonth,
+		lpSystemTime->wDay, lpSystemTime->wDayOfWeek,lpSystemTime->wHour, lpSystemTime->wMinute, lpSystemTime->wSecond, lpSystemTime->wMilliseconds);
+	OutputHookLog(buf);
 
 	//
 	HookWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
 }
-//////////////////////////////////////////////////////////////////////////////////////
-DLLEXPORT void OutputLastError(const wchar_t* errorInfo)
+
+DLLEXPORT VOID WINAPI NHGetSystemTime(LPSYSTEMTIME lpSystemTime)
 {
-	DWORD lastError = GetLastError();
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	// restore
+	RestoreWin32Api(&g_GetSystemTimeHook, HOOK_NEED_CHECK);
+
+	::GetSystemTime(lpSystemTime);
+	if (g_TimeProc == true)
+	{
+		TimeSub1Year(*lpSystemTime);
+	}
+
 	wchar_t buf[1024] = {0};
-	swprintf(buf, L"%s,LastError:%d", errorInfo, lastError);
-	MessageBox(0,buf,0,0);
+	swprintf(buf, L"NHGetSystemTime: %s,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n", modName, returnAddr, lpSystemTime->wYear, lpSystemTime->wMonth,
+		lpSystemTime->wDay, lpSystemTime->wDayOfWeek,lpSystemTime->wHour, lpSystemTime->wMinute, lpSystemTime->wSecond, lpSystemTime->wMilliseconds);
+	OutputHookLog(buf);
+
+	//
+	HookWin32Api(&g_GetSystemTimeHook, HOOK_NEED_CHECK);
 }
 
-DLLEXPORT void OutputHookLog(const wchar_t* info)
+void HookResettimeCallBack(void* parm)
 {
-	if (g_HookLog!=NULL)
+	::Sleep(3000);
+	if (g_IsTimeSetByHook == true)
 	{
-		char cbuf[1024] = {0};
-		WideCharToMultiByte(CP_ACP, NULL,
-			info, -1,
-			cbuf,
-			sizeof(cbuf),NULL,NULL);
-		fprintf(g_HookLog, "%d,%d,%s", ::GetCurrentProcessId(), ::GetCurrentThreadId(), cbuf);
+		//g_IsTimeSetByHook = false;
+		SYSTEMTIME time;
+		::GetSystemTime(&time);
+		time.wYear += 1;
+		::SetSystemTime(&time);
+		OutputHookLog(L"reset time\r\n");
 	}
 }
 
-DLLEXPORT BOOL CALLBACK EnumChildWindowsProc( HWND hWnd, LPARAM lParam )
+DLLEXPORT VOID WINAPI NHGetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTime)
 {
-	g_hChildren[g_numChildren++] = hWnd;
-	return TRUE;
-}
-
-DLLEXPORT void GetAllChildrenWnd(HWND hwnd)
-{
-	memset(g_hChildren, 0, sizeof(g_hChildren));
-	g_numChildren = 0;
-	g_hChildren[g_numChildren++] = hwnd;
-	EnumChildWindows(g_hWndTag, EnumChildWindowsProc,0);
-}
-
-DLLEXPORT bool FilterWnd(HWND hwnd)
-{
-	return true;
-	HWND* findResult = std::find(&g_hChildren[0], &g_hChildren[g_numChildren], hwnd);
-	return findResult==&g_hChildren[g_numChildren];
-}
-
-DLLEXPORT bool FilterCode(int nCode)
-{
-	return true;
-	return nCode>=0;
-}
-
-DLLEXPORT void GetWindowNameByHandle(HWND hwnd, wchar_t* dest, int destSize)
-{
-	//HWND children = hwnd;
-	//HWND parentWnd = children;
-	//while (1)
-	//{
-	//	parentWnd = ::GetParent(children);
-	//	if (parentWnd == NULL)
-	//	{
-	//		break;
-	//	}
-	//	children = parentWnd;
-	//}
-	//wchar_t childrenName[256] = {0};
-	//wchar_t parentName[256] = {0};
-	//::GetWindowTextW(hwnd, childrenName, sizeof(childrenName));
-	//::GetWindowTextW(children, parentName, sizeof(parentName));
-	//swprintf(dest, L"%s-%s", childrenName, parentName);
-	//return;
-
-	DWORD dwProcId;
-	DWORD theadID = ::GetWindowThreadProcessId(hwnd, &dwProcId);
-
-	PROCESSENTRY32 pe;
-	pe.dwSize = sizeof( PROCESSENTRY32 );
-	// 创建快照句柄
-	HANDLE hSnapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	// 先搜索系统中第一个进程的信息
-	::Process32First(hSnapshot, &pe);
-	// 下面对系统中的所有进程进行枚举，并保存其信息
-	do
+	DWORD returnAddr = 0;
+	__asm
 	{
-		if (pe.th32ProcessID == dwProcId)
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	// restore
+	RestoreWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_NEED_CHECK);
+
+	if (g_IsTimeSetByHook == false)
+	{
+		g_IsTimeSetByHook = true;
+		SYSTEMTIME time;
+		::GetSystemTime(&time);
+		time.wYear -= 1;
+		::SetSystemTime(&time);
+		::CreateThread(0,0,(LPTHREAD_START_ROUTINE)HookResettimeCallBack,0,0,0);
+		OutputHookLog(L"set time\r\n");
+	}
+
+	SYSTEMTIME systime;
+	::GetSystemTime(&systime);
+	//TimeSub1Year(systime);
+	LPSYSTEMTIME lpSystemTime = &systime;
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHGetSystemTimeAsFileTime: %s,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n", modName, returnAddr, lpSystemTime->wYear, lpSystemTime->wMonth,
+		lpSystemTime->wDay, lpSystemTime->wDayOfWeek,lpSystemTime->wHour, lpSystemTime->wMinute, lpSystemTime->wSecond, lpSystemTime->wMilliseconds);
+	OutputHookLog(buf);
+
+	::SystemTimeToFileTime(&systime, lpSystemTimeAsFileTime);
+
+	//
+	HookWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_NEED_CHECK);
+}
+
+void ProcessInjection(DWORD _proc_id)
+{
+	__try
+	{
+		HANDLE hProc = OpenProcess(
+			PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE,
+			FALSE, _proc_id);
+		DWORD dwSize = 48 * 2;
+		LPVOID _addr = VirtualAllocEx(hProc, NULL, dwSize, MEM_COMMIT, PAGE_READWRITE);
+		if (_addr == NULL) return;
+
+		DWORD _dwDataWriten = 0;
+		if (!WriteProcessMemory(hProc, _addr, HOOK_DLL_NAME, dwSize, &_dwDataWriten))
 		{
-			swprintf(dest, L"%d-%d-%s",dwProcId, theadID, pe.szExeFile);
-			//memcpy(dest, pe.szExeFile, wcslen(pe.szExeFile)*sizeof(wchar_t));
-			break;
+			VirtualFree(_addr, NULL, MEM_DECOMMIT);
+			CloseHandle(hProc);
+			return;
 		}
+		if (dwSize != _dwDataWriten)
+		{
+			CloseHandle(hProc);
+			VirtualFree(_addr, NULL, MEM_DECOMMIT);
+			return;
+		}
+
+		HMODULE hKernel = GetModuleHandle(L"Kernel32.dll");
+		LPTHREAD_START_ROUTINE _entry_func = 
+			(LPTHREAD_START_ROUTINE)GetProcAddress(hKernel, "LoadLibraryW");
+
+		DWORD dwRemoteThreadId = 0;
+		HANDLE hRemoteThread = CreateRemoteThread(
+			hProc, NULL, 0,
+			_entry_func,
+			_addr, NULL, &dwRemoteThreadId);
+		if (hRemoteThread == NULL)
+		{
+			CloseHandle(hProc);
+			VirtualFree(_addr, NULL, MEM_DECOMMIT);
+			return;
+		}
+
+		//WaitForSingleObject(hRemoteThread, INFINITE);
+		CloseHandle(hRemoteThread);
+		CloseHandle(hProc);
+		return;
 	}
-	while (Process32Next(hSnapshot, &pe));
-	DWORD lastError = ::GetLastError();
-	if (lastError == ERROR_NO_MORE_FILES)
+	__except(1)
 	{
-		int a = 0;
-		a = 0;
+		;
 	}
-	// 关闭快照句柄
-	CloseHandle(hSnapshot);
 }
 
-DLLEXPORT void EnumAllWindowSnapshot()
+DLLEXPORT BOOL WINAPI NHCreateProcessW(
+									  __in_opt    LPCWSTR lpApplicationName,
+									  __inout_opt LPWSTR lpCommandLine,
+									  __in_opt    LPSECURITY_ATTRIBUTES lpProcessAttributes,
+									  __in_opt    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+									  __in        BOOL bInheritHandles,
+									  __in        DWORD dwCreationFlags,
+									  __in_opt    LPVOID lpEnvironment,
+									  __in_opt    LPCWSTR lpCurrentDirectory,
+									  __in        LPSTARTUPINFOW lpStartupInfo,
+									  __out       LPPROCESS_INFORMATION lpProcessInformation
+)
 {
-	PROCESSENTRY32 pe;
-	pe.dwSize = sizeof( PROCESSENTRY32 );
-	// 创建快照句柄
-	HANDLE hSnapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	// 先搜索系统中第一个进程的信息
-	::Process32First(hSnapshot, &pe);
-	// 下面对系统中的所有进程进行枚举，并保存其信息
-	do
+	DWORD returnAddr = 0;
+	__asm
 	{
-		wchar_t buf[1024] = {0};
-		swprintf(buf, L"%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\r\n", pe.cntThreads, pe.cntUsage, pe.dwFlags, pe.dwSize, pe.pcPriClassBase, 
-			pe.th32DefaultHeapID, pe.th32ModuleID,pe.th32ParentProcessID, pe.th32ProcessID, pe.szExeFile);
-		OutputHookLog(buf);
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
 	}
-	while (Process32Next(hSnapshot, &pe));
-	DWORD lastError = ::GetLastError();
-	if (lastError == ERROR_NO_MORE_FILES)
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	// restore
+	RestoreWin32Api(&g_CreateProcessWHook, HOOK_NEED_CHECK);
+
+	LPPROCESS_INFORMATION info = lpProcessInformation;
+	PROCESS_INFORMATION infoStuct;
+	bool rtnInfo = true;
+	if (info == 0)
 	{
-		int a = 0;
-		a = 0;
+		rtnInfo = false;
+		info = &infoStuct;
 	}
-	// 关闭快照句柄
-	CloseHandle(hSnapshot);
+	BOOL isCreate = ::CreateProcessW(lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles, dwCreationFlags,
+		lpEnvironment, lpCurrentDirectory, lpStartupInfo, info);
+	//::Sleep(1000);
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHCreateProcessW: %s,%d,", modName, returnAddr);
+	// lpApplicationName
+	if (lpApplicationName != 0)
+	{
+		swprintf(buf+wcslen(buf), L"%s,", lpApplicationName);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpApplicationName);
+	}
+
+	// lpCommandLine
+	if (lpCommandLine != 0)
+	{
+		swprintf(buf+wcslen(buf), L"%s,", lpCommandLine);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpCommandLine);
+	}
+
+	// lpCurrentDirectory
+	if (lpCurrentDirectory != 0)
+	{
+		swprintf(buf+wcslen(buf), L"%s,", lpCurrentDirectory);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpCurrentDirectory);
+	}
+
+	// lpProcessAttributes
+	if (lpProcessAttributes != 0)
+	{
+		swprintf(buf+wcslen(buf), L"(%d,%p,%d),", lpProcessAttributes->bInheritHandle, lpProcessAttributes->lpSecurityDescriptor, lpProcessAttributes->nLength);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpProcessAttributes);
+	}
+
+	// lpThreadAttributes
+	if (lpThreadAttributes != 0)
+	{
+		swprintf(buf+wcslen(buf), L"(%d,%p,%d),", lpThreadAttributes->bInheritHandle, lpThreadAttributes->lpSecurityDescriptor, lpThreadAttributes->nLength);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpThreadAttributes);
+	}
+	swprintf(buf+wcslen(buf), L"%d,%d,%p,", bInheritHandles, dwCreationFlags, lpEnvironment);
+	swprintf(buf+wcslen(buf), L"(%d,%p,%p,%d,%d),", rtnInfo, info->hProcess, info->hThread, info->dwProcessId, info->dwThreadId);
+	swprintf(buf+wcslen(buf), L"%s", L"\r\n");
+
+	OutputHookLog(buf);
+
+	//ProcessInjection(info->dwProcessId);
+
+	//
+	HookWin32Api(&g_CreateProcessWHook, HOOK_NEED_CHECK);
+
+	return isCreate;
 }
-//////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 DLLEXPORT LRESULT CALLBACK MouseProc(int nCode,WPARAM wParam,LPARAM lParam)
@@ -539,7 +897,7 @@ DLLEXPORT LRESULT CALLBACK JournalRecordProc(int nCode,WPARAM wParam,LPARAM lPar
 	return CallNextHookEx(g_hHookJournalRecord, nCode, wParam, lParam);
 }
 
-DLLEXPORT void InitHook(HWND hwnd)
+DLLEXPORT void In(HWND hwnd)
 {
 	g_hWndTag = hwnd;
 	GetAllChildrenWnd(g_hWndTag);
@@ -548,17 +906,17 @@ DLLEXPORT void InitHook(HWND hwnd)
 		g_HookLog = fopen("d://hooklog.txt", "w+b");
 	}
 	
-	HINSTANCE hmod = GetModuleHandle(L"HookDll");
+	HINSTANCE hmod = GetModuleHandle(HOOK_DLL_NAME);
 	DWORD dwThreadId = 0;
-	wchar_t* targetWndName = L"Error Lookup";
-	HWND targetHwnd = ::FindWindow(0, targetWndName);
-	DWORD dwProcId;
-	DWORD theadID = ::GetWindowThreadProcessId(targetHwnd, &dwProcId);
-	wchar_t buf[1024] = {0};
-	swprintf(buf, L"%s,%d,%d,%d", targetWndName, targetHwnd, dwProcId, theadID);
-	OutputHookLog(buf);
-	dwThreadId = theadID;
-	dwThreadId = 0;
+	//wchar_t* targetWndName = L"Error Lookup";
+	//HWND targetHwnd = ::FindWindow(0, targetWndName);
+	//DWORD dwProcId;
+	//DWORD theadID = ::GetWindowThreadProcessId(targetHwnd, &dwProcId);
+	//wchar_t buf[1024] = {0};
+	//swprintf(buf, L"%s,%d,%d,%d", targetWndName, targetHwnd, dwProcId, theadID);
+	//OutputHookLog(buf);
+	//dwThreadId = theadID;
+	//dwThreadId = 0;
 
 	g_hHookKeybord = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, hmod,dwThreadId);
 	if (g_hHookKeybord == NULL)
@@ -772,20 +1130,44 @@ DLLEXPORT void UnInitHook()
 	}
 }
 
+void HookAllTimeFunc()
+{
+	/*SYSTEMTIME time;
+	::GetSystemTime(&time);
+	time.wYear -= 1;
+	::SetSystemTime(&time);*/
+
+	HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_GetSystemTimeHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_CreateProcessWHook, HOOK_CAN_WRITE);
+}
+
+void UnHookAllTimeFunc()
+{
+	RestoreWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_GetSystemTimeHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_CreateProcessWHook, HOOK_NEED_CHECK);
+}
+
 BOOL APIENTRY DllMain( HMODULE hModule,DWORD  ul_reason_for_call,LPVOID lpReserved)
 {
 	switch (ul_reason_for_call) 
 	{
 	case DLL_PROCESS_ATTACH:
 		g_GetLocalTimeHook.hInst = hModule;
-		HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
+		g_GetSystemTimeHook.hInst = hModule;
+		g_GetSystemTimeAsFileTimeHook.hInst = hModule;
+		g_CreateProcessWHook.hInst = hModule;
+		HookAllTimeFunc();
 		break;
 	case DLL_THREAD_ATTACH:
 		break;
 	case DLL_THREAD_DETACH:
 		break;
 	case DLL_PROCESS_DETACH:
-		RestoreWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
+		UnHookAllTimeFunc();
 		break;
 	}
     return TRUE;

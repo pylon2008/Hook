@@ -161,12 +161,12 @@ void CHookUIDlg::OnBnClickedButtonInitHook()
 
 	if (m_hDLL == 0)
 	{
-		m_hDLL = ::LoadLibrary(_T("HookDll.dll"));       //加载DLL
+		m_hDLL = ::LoadLibrary(_T("HookDll"));       //加载DLL
 	}
 	if (m_hDLL!=NULL)
 	{
 		typedef void (*LOADHOOK)(HWND hwnd);
-		LOADHOOK loadhook=(LOADHOOK)::GetProcAddress (m_hDLL,"InitHook");
+		LOADHOOK loadhook=(LOADHOOK)::GetProcAddress (m_hDLL,"In");
 		loadhook(m_hWnd);
 	}
 }
@@ -177,7 +177,7 @@ void CHookUIDlg::OnBnClickedButtonUninitHook()
 	//UnInitHook();
 	if (m_hDLL == 0)
 	{
-		m_hDLL = ::LoadLibrary(_T("HookDll.dll"));       //加载DLL
+		m_hDLL = ::LoadLibrary(_T("HookDllS"));       //加载DLL
 	}
 	if (m_hDLL!=NULL)
 	{

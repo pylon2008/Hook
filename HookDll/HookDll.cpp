@@ -249,6 +249,61 @@ APIHOOKSTRUCT g_CreateProcessWHook = {
 	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
 };
 
+APIHOOKSTRUCT g_CreateProcessAHook = {
+	L"Kernel32.dll",
+	"CreateProcessA",
+	0,
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	NULL,
+	"NHCreateProcessA",
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	0,
+	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+};
+
+APIHOOKSTRUCT g_CreateThreadHook = {
+	L"Kernel32.dll",
+	"CreateThread",
+	0,
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	NULL,
+	"NHCreateThread",
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	0,
+	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+};
+
+APIHOOKSTRUCT g_CreateFileWHook = {
+	L"Kernel32.dll",
+	"CreateFileW",
+	0,
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	NULL,
+	"NHCreateFileW",
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	0,
+	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+};
+
+APIHOOKSTRUCT g_CreateFileAHook = {
+	L"Kernel32.dll",
+	"CreateFileA",
+	0,
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	NULL,
+	"NHCreateFileA",
+	NULL,
+	{0, 0, 0, 0, 0, 0, 0},
+	0,
+	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+};
 
 FARPROC WINAPI NHGetFuncAddress(HINSTANCE hInst, wchar_t* lpMod, char* lpFunc)
 {
@@ -320,14 +375,18 @@ void HookWin32Api(LPAPIHOOKSTRUCT lpApiHook, int nSysMemStatus)
 	{	
 		lpApiHook->lpWinApiProc = (LPVOID)NHGetFuncAddress(lpApiHook->hInst, lpApiHook->lpszApiModuleName,lpApiHook->lpszApiName);
 		if (lpApiHook->dwApiOffset != 0)
+		{
 			lpApiHook->lpWinApiProc = (LPVOID)((DWORD)lpApiHook->lpWinApiProc + lpApiHook->dwApiOffset);
+		}
 	}
+
 	// 取得替代函數地址﹒
 	if(lpApiHook->lpHookApiProc == NULL)
 	{
 		lpApiHook->lpHookApiProc = (LPVOID)NHGetFuncAddress(lpApiHook->hInst,
 			lpApiHook->lpszHookApiModuleName,lpApiHook->lpszHookApiName);
 	}
+
 	// 形成 JMP 指令﹒
 	if (lpApiHook->HookApiFiveByte[0] == 0x00)
 	{
@@ -722,6 +781,294 @@ DLLEXPORT BOOL WINAPI NHCreateProcessW(
 	return isCreate;
 }
 
+DLLEXPORT BOOL WINAPI NHCreateProcessA(
+									  __in_opt    LPCSTR lpApplicationName,
+									  __inout_opt LPSTR lpCommandLine,
+									  __in_opt    LPSECURITY_ATTRIBUTES lpProcessAttributes,
+									  __in_opt    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+									  __in        BOOL bInheritHandles,
+									  __in        DWORD dwCreationFlags,
+									  __in_opt    LPVOID lpEnvironment,
+									  __in_opt    LPSTR lpCurrentDirectory,
+									  __in        LPSTARTUPINFOA lpStartupInfo,
+									  __out       LPPROCESS_INFORMATION lpProcessInformation
+)
+{
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	// restore
+	RestoreWin32Api(&g_CreateProcessAHook, HOOK_NEED_CHECK);
+
+	LPPROCESS_INFORMATION info = lpProcessInformation;
+	PROCESS_INFORMATION infoStuct;
+	bool rtnInfo = true;
+	if (info == 0)
+	{
+		rtnInfo = false;
+		info = &infoStuct;
+	}
+	BOOL isCreate = ::CreateProcessA(lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles, dwCreationFlags,
+		lpEnvironment, lpCurrentDirectory, lpStartupInfo, info);
+	//::Sleep(1000);
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHCreateProcessA: %s,%d,", modName, returnAddr);
+	// lpApplicationName
+	if (lpApplicationName != 0)
+	{
+		wchar_t tmpbuf[4096] = {0};
+		MultiByteToWideChar(CP_ACP, NULL, lpApplicationName, -1, tmpbuf, sizeof(tmpbuf)/sizeof(wchar_t));
+		swprintf(buf+wcslen(buf), L"%s,", tmpbuf);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpApplicationName);
+	}
+
+	// lpCommandLine
+	if (lpCommandLine != 0)
+	{
+		wchar_t tmpbuf[4096] = {0};
+		MultiByteToWideChar(CP_ACP, NULL, lpCommandLine, -1, tmpbuf, sizeof(tmpbuf)/sizeof(wchar_t));
+		swprintf(buf+wcslen(buf), L"%s,", tmpbuf);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpCommandLine);
+	}
+
+	// lpCurrentDirectory
+	if (lpCurrentDirectory != 0)
+	{
+		wchar_t tmpbuf[4096] = {0};
+		MultiByteToWideChar(CP_ACP, NULL, lpCurrentDirectory, -1, tmpbuf, sizeof(tmpbuf)/sizeof(wchar_t));
+		swprintf(buf+wcslen(buf), L"%s,", tmpbuf);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpCurrentDirectory);
+	}
+
+	// lpProcessAttributes
+	if (lpProcessAttributes != 0)
+	{
+		swprintf(buf+wcslen(buf), L"(%d,%p,%d),", lpProcessAttributes->bInheritHandle, lpProcessAttributes->lpSecurityDescriptor, lpProcessAttributes->nLength);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpProcessAttributes);
+	}
+
+	// lpThreadAttributes
+	if (lpThreadAttributes != 0)
+	{
+		swprintf(buf+wcslen(buf), L"(%d,%p,%d),", lpThreadAttributes->bInheritHandle, lpThreadAttributes->lpSecurityDescriptor, lpThreadAttributes->nLength);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpThreadAttributes);
+	}
+	swprintf(buf+wcslen(buf), L"%d,%d,%p,", bInheritHandles, dwCreationFlags, lpEnvironment);
+	swprintf(buf+wcslen(buf), L"(%d,%p,%p,%d,%d),", rtnInfo, info->hProcess, info->hThread, info->dwProcessId, info->dwThreadId);
+	swprintf(buf+wcslen(buf), L"%s", L"\r\n");
+
+	OutputHookLog(buf);
+
+	//ProcessInjection(info->dwProcessId);
+
+	//
+	HookWin32Api(&g_CreateProcessAHook, HOOK_NEED_CHECK);
+
+	return isCreate;
+}
+
+DLLEXPORT HANDLE WINAPI NHCreateThread(
+									 __in_opt  LPSECURITY_ATTRIBUTES lpThreadAttributes,
+									 __in      SIZE_T dwStackSize,
+									 __in      LPTHREAD_START_ROUTINE lpStartAddress,
+									 __in_opt  LPVOID lpParameter,
+									 __in      DWORD dwCreationFlags,
+									 __out_opt LPDWORD lpThreadId
+									 )
+{
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	// restore
+	RestoreWin32Api(&g_CreateThreadHook, HOOK_NEED_CHECK);
+
+	HANDLE threadHandle = ::CreateThread(lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags, lpThreadId);
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHCreateThread: %s,%d,", modName, returnAddr);
+
+	swprintf(buf+wcslen(buf), L"%d,%p,%d,%d,", dwStackSize, lpParameter, dwCreationFlags, lpStartAddress);
+
+	// lpThreadAttributes
+	if (lpThreadAttributes != 0)
+	{
+		swprintf(buf+wcslen(buf), L"%d,%p,%d", lpThreadAttributes->nLength, lpThreadAttributes->lpSecurityDescriptor, lpThreadAttributes->bInheritHandle);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p,", lpThreadAttributes);
+	}
+
+	// lpThreadId
+	if (lpThreadId != 0)
+	{
+		swprintf(buf+wcslen(buf), L"%d", *lpThreadId);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p", lpThreadId);
+	}
+	swprintf(buf+wcslen(buf), L"%s", L"\r\n");
+
+	OutputHookLog(buf);
+
+	//
+	HookWin32Api(&g_CreateThreadHook, HOOK_NEED_CHECK);
+
+	return threadHandle;
+}
+
+DLLEXPORT HANDLE WINAPI NHCreateFileW(
+			__in     LPCWSTR lpFileName,
+			__in     DWORD dwDesiredAccess,
+			__in     DWORD dwShareMode,
+			__in_opt LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+			__in     DWORD dwCreationDisposition,
+			__in     DWORD dwFlagsAndAttributes,
+			__in_opt HANDLE hTemplateFile
+			)
+{
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+
+	// restore
+	RestoreWin32Api(&g_CreateFileWHook, HOOK_NEED_CHECK);
+
+
+	HANDLE file = ::CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, 
+		dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHCreateFileW: %s,%d,", modName, returnAddr);
+	swprintf(buf+wcslen(buf), L"%s,%d,%d,%d,%d,%p,", lpFileName, dwDesiredAccess, 
+		dwShareMode, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
+
+	// lpThreadId
+	if (lpSecurityAttributes != 0)
+	{
+		swprintf(buf+wcslen(buf), L"%d,%p,%d,", lpSecurityAttributes->nLength, lpSecurityAttributes->lpSecurityDescriptor, lpSecurityAttributes->bInheritHandle);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p", lpSecurityAttributes);
+	}
+	swprintf(buf+wcslen(buf), L"%s", L"\r\n");
+
+	OutputHookLog(buf);
+
+	//
+	HookWin32Api(&g_CreateFileWHook, HOOK_NEED_CHECK);
+
+	return file;
+}
+
+DLLEXPORT HANDLE WINAPI NHCreateFileA(
+									  __in     LPCSTR lpFileName,
+									  __in     DWORD dwDesiredAccess,
+									  __in     DWORD dwShareMode,
+									  __in_opt LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+									  __in     DWORD dwCreationDisposition,
+									  __in     DWORD dwFlagsAndAttributes,
+									  __in_opt HANDLE hTemplateFile
+									  )
+{
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	wchar_t tmpbuf[4096] = {0};
+	MultiByteToWideChar(CP_ACP, NULL, lpFileName, -1, tmpbuf, sizeof(tmpbuf)/sizeof(wchar_t));
+
+	// restore
+	RestoreWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
+
+	char realCreateFile[1024] = {0};
+	strcpy(realCreateFile, lpFileName);
+	//int delta = strcmp(modName, lpFileName);
+	//int delta = wcscmp(modName, tmpbuf);
+	//if (delta == 0)
+	if( strstr(realCreateFile, "_破解") != 0 )
+	{
+		char* exe = strstr(realCreateFile, ".exe");
+		memcpy(exe-5, ".exe", 5);
+	}
+
+	HANDLE file = ::CreateFileA(realCreateFile, dwDesiredAccess, dwShareMode, lpSecurityAttributes, 
+		dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+
+	wchar_t tmpbuf2[4096] = {0};
+	MultiByteToWideChar(CP_ACP, NULL, realCreateFile, -1, tmpbuf2, sizeof(tmpbuf2)/sizeof(wchar_t));
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHCreateFileA: %s,%d,", modName, returnAddr);
+	swprintf(buf+wcslen(buf), L"%s,%s,%d,%d,%d,%d,%p,", tmpbuf, tmpbuf2, dwDesiredAccess, 
+		dwShareMode, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
+
+	// lpThreadId
+	if (lpSecurityAttributes != 0)
+	{
+		swprintf(buf+wcslen(buf), L"%d,%p,%d,", lpSecurityAttributes->nLength, lpSecurityAttributes->lpSecurityDescriptor, lpSecurityAttributes->bInheritHandle);
+	}
+	else
+	{
+		swprintf(buf+wcslen(buf), L"%p", lpSecurityAttributes);
+	}
+	swprintf(buf+wcslen(buf), L"%s", L"\r\n");
+
+	OutputHookLog(buf);
+
+	//
+	HookWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
+
+	return file;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -897,102 +1244,6 @@ DLLEXPORT LRESULT CALLBACK JournalRecordProc(int nCode,WPARAM wParam,LPARAM lPar
 	return CallNextHookEx(g_hHookJournalRecord, nCode, wParam, lParam);
 }
 
-DLLEXPORT void In(HWND hwnd)
-{
-	g_hWndTag = hwnd;
-	GetAllChildrenWnd(g_hWndTag);
-	if (g_HookLog == NULL)
-	{
-		g_HookLog = fopen("d://hooklog.txt", "w+b");
-	}
-	
-	HINSTANCE hmod = GetModuleHandle(HOOK_DLL_NAME);
-	DWORD dwThreadId = 0;
-	//wchar_t* targetWndName = L"Error Lookup";
-	//HWND targetHwnd = ::FindWindow(0, targetWndName);
-	//DWORD dwProcId;
-	//DWORD theadID = ::GetWindowThreadProcessId(targetHwnd, &dwProcId);
-	//wchar_t buf[1024] = {0};
-	//swprintf(buf, L"%s,%d,%d,%d", targetWndName, targetHwnd, dwProcId, theadID);
-	//OutputHookLog(buf);
-	//dwThreadId = theadID;
-	//dwThreadId = 0;
-
-	g_hHookKeybord = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, hmod,dwThreadId);
-	if (g_hHookKeybord == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookKeybord error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-/*
-	g_hHookMouse = SetWindowsHookEx(WH_MOUSE, MouseProc, hmod,dwThreadId);
-	if (g_hHookMouse == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookMouse error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-
-	g_hHookKeybordLL = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardLLProc, hmod,dwThreadId);
-	if (g_hHookKeybordLL == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookKeybordLL error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-
-	g_hHookGetMessage = SetWindowsHookEx(WH_GETMESSAGE, GetMessageProc, hmod,dwThreadId);
-	if (g_hHookGetMessage == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookGetMessage error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-
-	g_hHookCallWndProc = SetWindowsHookEx(WH_CALLWNDPROC, CallWndProcProc, hmod,dwThreadId);
-	if (g_hHookCallWndProc == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookCallWndProc error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-
-	g_hHookCBT = SetWindowsHookEx(WH_CBT, CBTProc, hmod,dwThreadId);
-	if (g_hHookCBT == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookCBT error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-
-	g_hHookMouseLL = SetWindowsHookEx(WH_MOUSE_LL, MouseLLProc, hmod,dwThreadId);
-	if (g_hHookMouseLL == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookMouseLL error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-
-	g_hHookShell= SetWindowsHookEx(WH_SHELL, ShellProc, hmod,dwThreadId);
-	if (g_hHookShell == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookShell error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-
-	g_hHookJournalRecord= SetWindowsHookEx(WH_JOURNALRECORD, JournalRecordProc, hmod,dwThreadId);
-	if (g_hHookJournalRecord == NULL)
-	{
-		wchar_t buf[256] = {0};
-		swprintf(buf, L"SetWindowsHookEx g_hHookJournalRecord error %p,%d", hmod, dwThreadId);
-		OutputLastError(buf);
-	}
-*/
-
-	//HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
-}
 
 DLLEXPORT void UnInitHook()
 {
@@ -1132,23 +1383,30 @@ DLLEXPORT void UnInitHook()
 
 void HookAllTimeFunc()
 {
-	/*SYSTEMTIME time;
-	::GetSystemTime(&time);
-	time.wYear -= 1;
-	::SetSystemTime(&time);*/
+	//HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
+	//HookWin32Api(&g_GetSystemTimeHook, HOOK_CAN_WRITE);
+	//HookWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_CAN_WRITE);
 
-	HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
-	HookWin32Api(&g_GetSystemTimeHook, HOOK_CAN_WRITE);
-	HookWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_CAN_WRITE);
-	HookWin32Api(&g_CreateProcessWHook, HOOK_CAN_WRITE);
+	/*HookWin32Api(&g_CreateProcessWHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_CreateProcessAHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_CreateThreadHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_CreateFileWHook, HOOK_CAN_WRITE);*/
+
+	HookWin32Api(&g_CreateFileAHook, HOOK_CAN_WRITE);
 }
 
 void UnHookAllTimeFunc()
 {
-	RestoreWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
-	RestoreWin32Api(&g_GetSystemTimeHook, HOOK_NEED_CHECK);
-	RestoreWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_NEED_CHECK);
-	RestoreWin32Api(&g_CreateProcessWHook, HOOK_NEED_CHECK);
+	//RestoreWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
+	//RestoreWin32Api(&g_GetSystemTimeHook, HOOK_NEED_CHECK);
+	//RestoreWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_NEED_CHECK);
+
+	/*RestoreWin32Api(&g_CreateProcessWHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_CreateProcessAHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_CreateThreadHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_CreateFileWHook, HOOK_NEED_CHECK);*/
+
+	RestoreWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,DWORD  ul_reason_for_call,LPVOID lpReserved)
@@ -1156,11 +1414,19 @@ BOOL APIENTRY DllMain( HMODULE hModule,DWORD  ul_reason_for_call,LPVOID lpReserv
 	switch (ul_reason_for_call) 
 	{
 	case DLL_PROCESS_ATTACH:
+		if (g_HookLog == NULL)
+		{
+			g_HookLog = fopen("d://hooklog.txt", "w+b");
+		}
 		g_GetLocalTimeHook.hInst = hModule;
 		g_GetSystemTimeHook.hInst = hModule;
 		g_GetSystemTimeAsFileTimeHook.hInst = hModule;
 		g_CreateProcessWHook.hInst = hModule;
-		HookAllTimeFunc();
+		g_CreateProcessAHook.hInst = hModule;
+		g_CreateThreadHook.hInst = hModule;
+		g_CreateFileWHook.hInst = hModule;
+		g_CreateFileAHook.hInst = hModule;
+		//HookAllTimeFunc();
 		break;
 	case DLL_THREAD_ATTACH:
 		break;
@@ -1171,6 +1437,106 @@ BOOL APIENTRY DllMain( HMODULE hModule,DWORD  ul_reason_for_call,LPVOID lpReserv
 		break;
 	}
     return TRUE;
+}
+
+DLLEXPORT void In(HWND hwnd)
+{
+	HookAllTimeFunc();
+	return;
+
+	g_hWndTag = hwnd;
+	GetAllChildrenWnd(g_hWndTag);
+	if (g_HookLog == NULL)
+	{
+		g_HookLog = fopen("d://hooklog.txt", "w+b");
+	}
+
+	HINSTANCE hmod = GetModuleHandle(HOOK_DLL_NAME);
+	DWORD dwThreadId = 0;
+	//wchar_t* targetWndName = L"Error Lookup";
+	//HWND targetHwnd = ::FindWindow(0, targetWndName);
+	//DWORD dwProcId;
+	//DWORD theadID = ::GetWindowThreadProcessId(targetHwnd, &dwProcId);
+	//wchar_t buf[1024] = {0};
+	//swprintf(buf, L"%s,%d,%d,%d", targetWndName, targetHwnd, dwProcId, theadID);
+	//OutputHookLog(buf);
+	//dwThreadId = theadID;
+	//dwThreadId = 0;
+
+	g_hHookKeybord = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, hmod,dwThreadId);
+	if (g_hHookKeybord == NULL)
+	{
+		wchar_t buf[256] = {0};
+		swprintf(buf, L"SetWindowsHookEx g_hHookKeybord error %p,%d", hmod, dwThreadId);
+		OutputLastError(buf);
+	}
+	/*
+	g_hHookMouse = SetWindowsHookEx(WH_MOUSE, MouseProc, hmod,dwThreadId);
+	if (g_hHookMouse == NULL)
+	{
+	wchar_t buf[256] = {0};
+	swprintf(buf, L"SetWindowsHookEx g_hHookMouse error %p,%d", hmod, dwThreadId);
+	OutputLastError(buf);
+	}
+
+	g_hHookKeybordLL = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardLLProc, hmod,dwThreadId);
+	if (g_hHookKeybordLL == NULL)
+	{
+	wchar_t buf[256] = {0};
+	swprintf(buf, L"SetWindowsHookEx g_hHookKeybordLL error %p,%d", hmod, dwThreadId);
+	OutputLastError(buf);
+	}
+
+	g_hHookGetMessage = SetWindowsHookEx(WH_GETMESSAGE, GetMessageProc, hmod,dwThreadId);
+	if (g_hHookGetMessage == NULL)
+	{
+	wchar_t buf[256] = {0};
+	swprintf(buf, L"SetWindowsHookEx g_hHookGetMessage error %p,%d", hmod, dwThreadId);
+	OutputLastError(buf);
+	}
+
+	g_hHookCallWndProc = SetWindowsHookEx(WH_CALLWNDPROC, CallWndProcProc, hmod,dwThreadId);
+	if (g_hHookCallWndProc == NULL)
+	{
+	wchar_t buf[256] = {0};
+	swprintf(buf, L"SetWindowsHookEx g_hHookCallWndProc error %p,%d", hmod, dwThreadId);
+	OutputLastError(buf);
+	}
+
+	g_hHookCBT = SetWindowsHookEx(WH_CBT, CBTProc, hmod,dwThreadId);
+	if (g_hHookCBT == NULL)
+	{
+	wchar_t buf[256] = {0};
+	swprintf(buf, L"SetWindowsHookEx g_hHookCBT error %p,%d", hmod, dwThreadId);
+	OutputLastError(buf);
+	}
+
+	g_hHookMouseLL = SetWindowsHookEx(WH_MOUSE_LL, MouseLLProc, hmod,dwThreadId);
+	if (g_hHookMouseLL == NULL)
+	{
+	wchar_t buf[256] = {0};
+	swprintf(buf, L"SetWindowsHookEx g_hHookMouseLL error %p,%d", hmod, dwThreadId);
+	OutputLastError(buf);
+	}
+
+	g_hHookShell= SetWindowsHookEx(WH_SHELL, ShellProc, hmod,dwThreadId);
+	if (g_hHookShell == NULL)
+	{
+	wchar_t buf[256] = {0};
+	swprintf(buf, L"SetWindowsHookEx g_hHookShell error %p,%d", hmod, dwThreadId);
+	OutputLastError(buf);
+	}
+
+	g_hHookJournalRecord= SetWindowsHookEx(WH_JOURNALRECORD, JournalRecordProc, hmod,dwThreadId);
+	if (g_hHookJournalRecord == NULL)
+	{
+	wchar_t buf[256] = {0};
+	swprintf(buf, L"SetWindowsHookEx g_hHookJournalRecord error %p,%d", hmod, dwThreadId);
+	OutputLastError(buf);
+	}
+	*/
+
+	//HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
 }
 
 #ifdef _MANAGED

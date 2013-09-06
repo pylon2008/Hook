@@ -23,6 +23,10 @@ EXPORTS
 	NHGetSystemTime
 	NHGetSystemTimeAsFileTime
 	NHCreateProcessW
+	NHCreateProcessA
+	NHCreateThread
+	NHCreateFileW
+	NHCreateFileA
 
 SECTIONS
 	.data READ WRITE SHARED

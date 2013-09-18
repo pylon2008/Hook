@@ -190,6 +190,30 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HookUtil.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\HookUtil.h"
+				>
+			</File>
+			<File
+				RelativePath=".\R3ApiHook.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\R3ApiHook.h"
+				>
+			</File>
+			<File
+				RelativePath=".\R3ApiHookFix.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\R3ApiHookFix.h"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration

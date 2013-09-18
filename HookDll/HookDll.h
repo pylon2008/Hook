@@ -2,14 +2,7 @@
 #define HOOK_DLL
 
 #include <windows.h>
-
-#ifdef      __cplusplus
-//#define DLLEXPORT extern "C" __declspec(dllexport)
-#define DLLEXPORT __declspec(dllexport)
-#else
-#define DLLEXPORT __declspec(dllexport)
-#endif
-
+#include "HookUtil.h"
 //DLLEXPORT void InitHook(HWND hwnd);
 
 //DLLEXPORT void UnInitHook();

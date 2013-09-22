@@ -2,6 +2,7 @@
 #include "HookUtil.h"
 #include <Windows.h>
 #include <stdio.h>
+#include <vector>
 
 static FILE*		g_HookLog			= NULL;
 
@@ -33,12 +34,14 @@ void OutputHookLog(const wchar_t* info)
 {
 	if (g_HookLog!=NULL)
 	{
-		char cbuf[1024] = {0};
+		std::vector<char> buf;
+		buf.resize( wcslen(info)+1024 );
+		memset(&buf[0], 0, buf.size());
 		WideCharToMultiByte(CP_ACP, NULL,
 			info, -1,
-			cbuf,
-			sizeof(cbuf),NULL,NULL);
-		fprintf(g_HookLog, "%d,%d,%s", ::GetCurrentProcessId(), ::GetCurrentThreadId(), cbuf);
+			&buf[0],
+			buf.size(),NULL,NULL);
+		fprintf(g_HookLog, "%d,%d,%s", ::GetCurrentProcessId(), ::GetCurrentThreadId(), &buf[0]);
 		fflush(g_HookLog);
 	}
 }

@@ -859,6 +859,14 @@ DLLEXPORT HANDLE WINAPI NHCreateFileA(
 	//
 	HookWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
 
+	static unsigned long g_CreateFileTime = 0;
+	g_CreateFileTime ++;
+	if (g_CreateFileTime == 11)
+	{
+		void RepairR3ApiIAT();
+		RepairR3ApiIAT();
+	}
+
 	return file;
 }
 

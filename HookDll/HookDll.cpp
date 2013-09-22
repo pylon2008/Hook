@@ -536,6 +536,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,DWORD  ul_reason_for_call,LPVOID lpReserv
 
 DLLEXPORT void In(HWND hwnd)
 {
+	RepairR3Api();
 	return;
 
 	g_hWndTag = hwnd;

@@ -35,9 +35,9 @@ void MemPatch(void* targetAddr, void* srcCode, void* destCode, unsigned long cod
 	}
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-void CrackFloderEncryptionCallBack(void* parm)
+
+void DoCrackFloderEncryption()
 {
-	::Sleep(5000);
 	HMODULE targetMod = (HMODULE)0xffffffff;
 
 	std::vector<MODULEENTRY32> output;
@@ -84,12 +84,24 @@ void CrackFloderEncryptionCallBack(void* parm)
 	char* targetAddr3 = (char*)exeMod + deltaValue3;
 	char srcCode3[] = {0x89,0x45,0xfc,0x83,0x7d,0xfc,0x1e,0x0f,0x8c};
 	char destCode3[] = {0x89,0x4d,0xfc,0x83,0x7d,0xfc,0x1e,0x0f,0x8c};
-	unsigned long codeSize3 = sizeof(srcCode2);
+	unsigned long codeSize3 = sizeof(srcCode3);
 	MemPatch(targetAddr3, srcCode3, destCode3, codeSize3);
 
+	// 	È¥µôµ¯³öÍøÒ³
+	unsigned long deltaValue4 = 0xD269C;
+	char* targetAddr4 = (char*)exeMod + deltaValue4;
+	char srcCode4[] = {0x89,0x45,0xf8,0x83,0x7d,0xf8,0x00,0x0f,0x85};
+	char destCode4[] = {0x89,0x65,0xf8,0x83,0x7d,0xf8,0x00,0x0f,0x85};
+	unsigned long codeSize4 = sizeof(srcCode4);
+	MemPatch(targetAddr4, srcCode4, destCode4, codeSize4);
 
-
-
+	// 	Î´Öª1
+	unsigned long deltaValue5 = 0xD2386;
+	char* targetAddr5 = (char*)exeMod + deltaValue5;
+	char srcCode5[] = {0x89,0x45,0xf4,0x83,0x7d,0xf4,0x00,0x0f,0x85};
+	char destCode5[] = {0x89,0x65,0xf4,0x83,0x7d,0xf4,0x00,0x0f,0x85};
+	unsigned long codeSize5 = sizeof(srcCode5);
+	MemPatch(targetAddr5, srcCode5, destCode5, codeSize5);
 
 
 
@@ -106,9 +118,15 @@ void CrackFloderEncryptionCallBack(void* parm)
 	}
 }
 
+void CrackFloderEncryptionCallBack(void* parm)
+{
+	::Sleep(5000);
+	DoCrackFloderEncryption();
+}
+
 void CrackFloderEncryption()
 {
-	::CreateThread(0,0,(LPTHREAD_START_ROUTINE)CrackFloderEncryptionCallBack,0,0,0);
+	//::CreateThread(0,0,(LPTHREAD_START_ROUTINE)CrackFloderEncryptionCallBack,0,0,0);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

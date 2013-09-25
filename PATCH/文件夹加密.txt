@@ -1,0 +1,306 @@
+100AEED9   FF15 4C350C10    CALL DWORD PTR DS:[100C354C]             ; USER32.GetWindowTextA
+
+//////////////////////////////////////////////
+
+1002B977   E8 38350800      CALL krnln.100AEEB4
+
+1002B977   E8 38350800      CALL krnln.100AEEB4
+
+1002B977   E8 38350800      CALL krnln.100AEEB4
+
+//////////////////////////////////////////////
+10057033   FFD0             CALL EAX
+
+10057033   FFD0             CALL EAX
+
+10057033   FFD0             CALL EAX
+
+////////////////////////////////////////////////
+1002961F   E8 1CD60200      CALL krnln.10056C40
+
+1002961F   E8 1CD60200      CALL krnln.10056C40
+
+
+1002961F   E8 1CD60200      CALL krnln.10056C40
+
+////////////////////////////////////////////////////
+004D3657   E8 E1620100      CALL 文件夹加.004E993D
+
+
+004D36D4   E8 64620100      CALL 文件夹加.004E993D
+
+004D3A8B   E8 AD5E0100      CALL 文件夹加.004E993D
+
+
+////////////////////////////////////////////////////////
+004D3680    E8 AC620100     CALL 文件夹加.004E9931			@根据输入字符串计算返回某字符串 qqqqqqqq
+
+004D3709    E8 23620100     CALL 文件夹加.004E9931	    @根据输入字符串计算返回某字符串 qqq 后面与168计算
+
+004D3734    83F8 00         CMP EAX,0										@qqq 后面与168计算结果比较 
+
+004D374A    E8 D6610100     CALL 文件夹加.004E9925			@ 后面根据这个返回结果
+
+
+
+
+004D3772    85C0            TEST EAX,EAX
+
+004D39AF    E8 592EFDFF     CALL 文件夹加.004A680D  				@请求注册。。。
+
+004D3A17    E8 155F0100     CALL 文件夹加.004E9931					@使用请求注册	
+
+004D3A27    E8 F95E0100     CALL 文件夹加.004E9925
+
+004D3ABD    A1 68213601     MOV EAX,DWORD PTR DS:[1362168]		@文件夹加密软件
+
+004D3AEC    E8 405E0100     CALL 文件夹加.004E9931						@D:\Dosame\Dosamesoft.p
+
+
+004D3B09    85C0            TEST EAX,EAX
+
+
+
+004D3CE2    E8 4A5C0100     CALL 文件夹加.004E9931		@chu messagebox
+
+//////////////////////////////////////////////////////////////////////////////
+100621B0    FF15 A4360C10   CALL DWORD PTR DS:[100C36A4]             ; USER32.MessageBoxA
+
+10028E87    FF13            CALL DWORD PTR DS:[EBX]
+
+004D3CE2    E8 4A5C0100     CALL 文件夹加.004E9931
+
+10028F06    FF55 FC         CALL DWORD PTR SS:[EBP-4]
+
+10052453    E8 416AFDFF     CALL krnln.10028E99
+
+/////////////////////////////////////////////////////////
+0021E178
+0015E040
+0015E040
+
+////////////////////////////////////////////////////////////
+004D3CE2    E8 4A5C0100     CALL 文件夹加.004E9931
+
+10058309    0F94C2          SETE DL				@改成可见
+
+
+
+7C92E464    64:A1 18000000  MOV EAX,DWORD PTR FS:[18]
+
+//////////////////////////////////////////////////////////////
+1005972C    3B70 04         CMP ESI,DWORD PTR DS:[EAX+4]
+
+、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、
+10057BDE   /75 12           JNZ SHORT krnln.10057BF2
+
+10057C1E   /0F84 78010000   JE krnln.10057D9C
+
+10057DDE   /74 16           JE SHORT krnln.10057DF6
+
+////////////////////////////////////////////////////////
+7C810C6D >  A1 F455887C     MOV EAX,DWORD PTR DS:[7C8855F4]         //////////////GetCommandLineA
+
+0012FE95    9A 12710100 000>CALL FAR 0000:00017112                   ; Far call
+
+0012FFB0   0012FFC4
+
+71129458    53              PUSH EBX
+
+///////////////////////////////////////////////
+7C810C6D >  A1 F455887C     MOV EAX,DWORD PTR DS:[7C8855F4]
+
+
+712041B0    E8 2333F2FF     CALL V2200806.711274D8                   ; JMP to kernel32.GetCommandLineA
+
+71207325    E8 4292FFFF     CALL V2200806.7120056C
+
+7120B9FD    E8 B2AFFFFF     CALL V2200806.712069B4
+
+7120BEEC    E8 BF11F2FF     CALL V2200806.7112D0B0
+
+//////////////////////////////////////////////
+正在启用通用脱壳引擎...1260acf
+Found OEP : 0040389F
+Unpacking...
+Dumping...
+Fixing...
+错误:  修复IAT时出错!
+Finished!
+Unpacked File:E:\安装文件\加密与解密工具\文件夹加密软件_UnPacked.WSDump.exe
+
+/////////////////////////////////////////////////////////////////////////////////
+yingyue，你好，我看到您在看雪指导了好多人学习脱壳，我现在正在学习脱壳，遇到一个软件始终找不到OEP，能不能帮忙指导一下啊？期待您的回复
+http://bbs.pediy.com/showthread.php?t=177857
+QQ:645890504
+///////////////////////////////////////////////////////////////////////
+EAX 0022FB90 ASCII "58.215.65.70"
+ECX 00000000
+EDX 00000000
+EBX 100E4974 krnln.100E4974
+ESP 0012F1A4
+EBP 0012F1C8
+ESI 100EEBA8 krnln.100EEBA8
+EDI 0156D9E8
+EIP 004D38D3 文件夹加.004D38D3
+C 0  ES 0023 32bit 0(FFFFFFFF)
+P 1  CS 001B 32bit 0(FFFFFFFF)
+A 1  SS 0023 32bit 0(FFFFFFFF)
+Z 0  DS 0023 32bit 0(FFFFFFFF)
+S 0  FS 003B 32bit 7FFDD000(FFF)
+T 0  GS 0000 NULL
+D 0
+O 0  LastErr ERROR_SUCCESS (00000000)
+EFL 00000216 (NO,NB,NE,A,NS,PE,GE,G)
+ST0 empty 7.5236762472891530490e-2806
+ST1 empty +UNORM 0402 00000018 B7F9EC7A
+ST2 empty +UNORM 00E9 00000000 BF805475
+ST3 empty 4.8323986445382102760e-4932
+ST4 empty +UNORM 0006 00000020 031774B4
+ST5 empty 8.0000000000000000000
+ST6 empty 0.1250000000000000000
+ST7 empty 1.0000000000000000000
+               3 2 1 0      E S P U O Z D I
+FST 0100  Cond 0 0 0 1  Err 0 0 0 0 0 0 0 0  (LT)
+FCW 027F  Prec NEAR,53  Mask    1 1 1 1 1 1
+
+
+
+
+
+
+
+
+004D3966    E8 83030000     CALL 文件夹加.004D3CEE
+
+0012F1C0   0022FB90  ASCII "2064480279"
+
+004D39AF    E8 592EFDFF     CALL 文件夹加.004A680D  @请求注册。。。
+
+
+
+
+
+
+EAX 002329D0 ASCII "18580322511"
+ECX 00000000
+EDX 00000000
+EBX 100E43E4 krnln.100E43E4
+ESP 0012F1B4
+EBP 0012F1C8
+ESI 0022FB61
+EDI 002329D8 ASCII "511"
+EIP 004D396B 文件夹加.004D396B
+C 0  ES 0023 32bit 0(FFFFFFFF)
+P 1  CS 001B 32bit 0(FFFFFFFF)
+A 0  SS 0023 32bit 0(FFFFFFFF)
+Z 0  DS 0023 32bit 0(FFFFFFFF)
+S 0  FS 003B 32bit 7FFDD000(FFF)
+T 0  GS 0000 NULL
+D 0
+O 0  LastErr ERROR_SUCCESS (00000000)
+EFL 00000206 (NO,NB,NE,A,NS,PE,GE,G)
+ST0 empty 7.5236762472891530490e-2806
+ST1 empty +UNORM 0402 00000018 B7F9EC7A
+ST2 empty +UNORM 00E9 00000000 BF805475
+ST3 empty 4.8323986445382102760e-4932
+ST4 empty +UNORM 0006 00000020 031774B4
+ST5 empty 8.0000000000000000000
+ST6 empty 3.0000000000000000000
+ST7 empty 1.8580322511000000000e+10
+               3 2 1 0      E S P U O Z D I
+FST 0000  Cond 0 0 0 0  Err 0 0 0 0 0 0 0 0  (GT)
+FCW 027F  Prec NEAR,53  Mask    1 1 1 1 1 1
+
+//////////////////////////////////////////////////////////////////////////
+004E58C1    68 A5C74000     PUSH 文件夹加.0040C7A5                       ; ASCII "njhbgvfwa"
+
+100935D3    FFD6            CALL ESI						@recv
+
+100935F2    E8 196AF9FF     CALL krnln.1002A010		@recv返回内容关键计算
+
+////////////////////////////////////////////////////////////////////////////
+EAX 100F0AB4 krnln.100F0AB4
+ECX 0012CF34
+EDX 100EF050 krnln.100EF050
+EBX 100E4B44 krnln.100E4B44
+ESP 0012CF10
+EBP 0012F7C8
+ESI 00000000
+EDI 00000001
+EIP 1002A03C krnln.1002A03C
+C 0  ES 0023 32bit 0(FFFFFFFF)
+P 0  CS 001B 32bit 0(FFFFFFFF)
+A 0  SS 0023 32bit 0(FFFFFFFF)
+Z 0  DS 0023 32bit 0(FFFFFFFF)
+S 0  FS 003B 32bit 7FFDD000(FFF)
+T 0  GS 0000 NULL
+D 0
+O 0  LastErr ERROR_SUCCESS (00000000)
+EFL 00000202 (NO,NB,NE,A,NS,PO,GE,G)
+ST0 empty -??? FFFF 005E005E 005E005E
+ST1 empty -??? FFFF 00D500D5 00D500D5
+ST2 empty -??? FFFF 005E0058 00560052
+ST3 empty -??? FFFF 00D400C7 00C400B9
+ST4 empty -NAN FFFF FFF2EEE3 FFF9F8F3
+ST5 empty -??? FFFF 00D500C8 00C400B9
+ST6 empty 1.0000000000000000000
+ST7 empty 1.0000000000000000000
+               3 2 1 0      E S P U O Z D I
+FST 4000  Cond 1 0 0 0  Err 0 0 0 0 0 0 0 0  (EQ)
+FCW 027F  Prec NEAR,53  Mask    1 1 1 1 1 1
+
+//////////////////////////////////////////////////////
+// 第一个地方
+004AF767    E8 17020000     CALL 文件夹加.004AF983			@界面判断是否注册
+
+004AFA0E    E8 F80A0000     CALL 文件夹加.004B050B
+
+0012EF20   00010000  UNICODE "1830B7BD-F7A3-4c4d-989B-C004DE465EDE=5fbc:15eff8"
+
+////////////////////////////////////////////////////////////////////////////////////////
+004AF767    E8 17020000     CALL 文件夹加.004AF983
+004AF76C    896D F8         MOV DWORD PTR SS:[EBP-8],EAX				// 此处eax改值，完成破解
+004AF76F    837D F8 00      CMP DWORD PTR SS:[EBP-8],0
+004AF773    0F85 91000000   JNZ 文件夹加.004AF80A
+004AF779    6A 00           PUSH 0
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+EnableWindow false
+
+// EnableWindow 
+77D29849 >  8BFF            MOV EDI,EDI
+77D2984B    55              PUSH EBP
+77D2984C    8BEC            MOV EBP,ESP
+77D2984E    6A 60           PUSH 60
+77D29850    FF75 0C         PUSH DWORD PTR SS:[EBP+C]
+77D29853    FF75 08         PUSH DWORD PTR SS:[EBP+8]
+77D29856    E8 DAFFFFFF     CALL USER32.77D29835
+
+
+
+///////////////////////////////////////////
+004AF767    E8 17020000     CALL 文件夹加.004AF983
+004AF76C    896D F8         MOV DWORD PTR SS:[EBP-8],EAX				// 此处eax改值，完成破解
+004AF76F    837D F8 00      CMP DWORD PTR SS:[EBP-8],0
+004AF773    0F85 91000000   JNZ 文件夹加.004AF80A
+004AF779    6A 00           PUSH 0
+
+
+004D22BB    E8 C3D6FDFF     CALL _UnPacke.004AF983
+004D22C0    8965 F4         MOV DWORD PTR SS:[EBP-C],ESP		// 密码输入框
+004D22C3    837D F4 00      CMP DWORD PTR SS:[EBP-C],0
+004D22C7    0F85 3A000000   JNZ _UnPacke.004D2307
+004D22CD    6A 00           PUSH 0
+004D22CF    68 73C74000     PUSH _UnPacke.0040C773                   ; ASCII "111111"
+
+004D2431    E8 4E51FDFF     CALL _UnPacke.004A7584
+004D2436    8945 FC         MOV DWORD PTR SS:[EBP-4],EAX		// 解密按钮
+004D2439    837D FC 1E      CMP DWORD PTR SS:[EBP-4],1E
+004D243D    0F8C 57000000   JL _UnPacke.004D249A
+004D2443    6A 00           PUSH 0
+004D2445    68 01000000     PUSH 1
+004D244A    6A FF           PUSH -1
+004D244C    6A 06           PUSH 6
+
+

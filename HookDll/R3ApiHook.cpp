@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "R3ApiHook.h"
 #include "HookUtil.h"
+#include "CrackPatch.h"
 #include <stdio.h>
 
 bool g_TimeProc = true;
@@ -972,6 +973,15 @@ HOOK_API_DLL_EXPORT HMODULE WINAPI NHLoadLibraryA(
 
 	//
 	HookWin32Api(&g_LoadLibraryAHook, HOOK_NEED_CHECK);
+
+	// ∆∆Ω‚º”√‹»Ìº˛
+	const char* p = strstr(lpLibFileName, "\E_4\user32.dll");
+	if (strstr(lpLibFileName, "E_4") != 0
+		&& strstr(lpLibFileName, "RegEx.fnr"))
+	{
+		void DoCrackFloderEncryption();
+		DoCrackFloderEncryption();
+	}
 	return mod;
 }
 

@@ -161,7 +161,7 @@ void CHookUIDlg::OnBnClickedButtonInitHook()
 
 	if (m_hDLL == 0)
 	{
-		m_hDLL = ::LoadLibrary(_T("HookDll"));       //º”‘ÿDLL
+		m_hDLL = ::LoadLibrary(_T("D:\\WorkStation\\Git\\Hub\\Hook\\bin\\HookDll"));       //º”‘ÿDLL
 	}
 	if (m_hDLL!=NULL)
 	{

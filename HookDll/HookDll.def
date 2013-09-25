@@ -4,14 +4,6 @@ EXPORTS
 	In
 	UnInitHook
 	RepairR3Api
-	NHGetLocalTime
-	NHGetSystemTime
-	NHGetSystemTimeAsFileTime
-	NHCreateProcessW
-	NHCreateProcessA
-	NHCreateThread
-	NHCreateFileW
-	NHCreateFileA
 
 SECTIONS
 	.data READ WRITE SHARED

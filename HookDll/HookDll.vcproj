@@ -117,12 +117,14 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="1"
+				WholeProgramOptimization="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;HOOKDLL_EXPORTS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -135,6 +137,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="..\bin\$(ProjectName).dll"
 				LinkIncremental="1"
 				ModuleDefinitionFile="HookDll.def"
 				GenerateDebugInformation="true"
@@ -177,6 +180,14 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\CrackPatch.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CrackPatch.h"
+				>
+			</File>
 			<File
 				RelativePath=".\HookDll.cpp"
 				>

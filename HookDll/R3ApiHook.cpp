@@ -31,122 +31,195 @@ typedef struct _tagApiHookStruct
 }
 APIHOOKSTRUCT, *LPAPIHOOKSTRUCT;
 
-
-APIHOOKSTRUCT g_GetLocalTimeHook = {
-	L"Kernel32.dll",
-	"GetLocalTime",
-	0,
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	NULL,
-	"NHGetLocalTime",
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	0,
-	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
-};
-
-APIHOOKSTRUCT g_GetSystemTimeHook = {
-	L"Kernel32.dll",
-	"GetSystemTime",
-	0,
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	NULL,
-	"NHGetSystemTime",
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	0,
-	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
-};
-
-APIHOOKSTRUCT g_GetSystemTimeAsFileTimeHook = {
-	L"Kernel32.dll",
-	"GetSystemTimeAsFileTime",
-	0,
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	NULL,
-	"NHGetSystemTimeAsFileTime",
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	0,
-	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
-};
-
-APIHOOKSTRUCT g_CreateProcessWHook = {
-	L"Kernel32.dll",
-	"CreateProcessW",
-	0,
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	NULL,
-	"NHCreateProcessW",
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	0,
-	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
-};
-
-APIHOOKSTRUCT g_CreateProcessAHook = {
-	L"Kernel32.dll",
-	"CreateProcessA",
-	0,
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	NULL,
-	"NHCreateProcessA",
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	0,
-	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
-};
-
-APIHOOKSTRUCT g_CreateThreadHook = {
-	L"Kernel32.dll",
-	"CreateThread",
-	0,
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	NULL,
-	"NHCreateThread",
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	0,
-	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
-};
-
-APIHOOKSTRUCT g_CreateFileWHook = {
-	L"Kernel32.dll",
-	"CreateFileW",
-	0,
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	NULL,
-	"NHCreateFileW",
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	0,
-	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
-};
-
-APIHOOKSTRUCT g_CreateFileAHook = {
-	L"Kernel32.dll",
-	"CreateFileA",
-	0,
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	NULL,
-	"NHCreateFileA",
-	NULL,
-	{0, 0, 0, 0, 0, 0, 0},
-	0,
-	{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
-};
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+//#define HOOK_API_DLL_EXPORT	DLLEXPORT
+#define HOOK_API_DLL_EXPORT
+HOOK_API_DLL_EXPORT VOID WINAPI NHGetLocalTime(LPSYSTEMTIME lpSystemTime);
+HOOK_API_DLL_EXPORT VOID WINAPI NHGetSystemTime(LPSYSTEMTIME lpSystemTime);
+HOOK_API_DLL_EXPORT VOID WINAPI NHGetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTime);
+HOOK_API_DLL_EXPORT BOOL WINAPI NHCreateProcessW(
+									   __in_opt    LPCWSTR lpApplicationName,
+									   __inout_opt LPWSTR lpCommandLine,
+									   __in_opt    LPSECURITY_ATTRIBUTES lpProcessAttributes,
+									   __in_opt    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+									   __in        BOOL bInheritHandles,
+									   __in        DWORD dwCreationFlags,
+									   __in_opt    LPVOID lpEnvironment,
+									   __in_opt    LPCWSTR lpCurrentDirectory,
+									   __in        LPSTARTUPINFOW lpStartupInfo,
+									   __out       LPPROCESS_INFORMATION lpProcessInformation
+									   );
+HOOK_API_DLL_EXPORT BOOL WINAPI NHCreateProcessA(
+									   __in_opt    LPCSTR lpApplicationName,
+									   __inout_opt LPSTR lpCommandLine,
+									   __in_opt    LPSECURITY_ATTRIBUTES lpProcessAttributes,
+									   __in_opt    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+									   __in        BOOL bInheritHandles,
+									   __in        DWORD dwCreationFlags,
+									   __in_opt    LPVOID lpEnvironment,
+									   __in_opt    LPSTR lpCurrentDirectory,
+									   __in        LPSTARTUPINFOA lpStartupInfo,
+									   __out       LPPROCESS_INFORMATION lpProcessInformation
+									   );
+HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateThread(
+									   __in_opt  LPSECURITY_ATTRIBUTES lpThreadAttributes,
+									   __in      SIZE_T dwStackSize,
+									   __in      LPTHREAD_START_ROUTINE lpStartAddress,
+									   __in_opt  LPVOID lpParameter,
+									   __in      DWORD dwCreationFlags,
+									   __out_opt LPDWORD lpThreadId
+									   );
+HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileW(
+									  __in     LPCWSTR lpFileName,
+									  __in     DWORD dwDesiredAccess,
+									  __in     DWORD dwShareMode,
+									  __in_opt LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+									  __in     DWORD dwCreationDisposition,
+									  __in     DWORD dwFlagsAndAttributes,
+									  __in_opt HANDLE hTemplateFile
+									  );
+HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileA(
+									  __in     LPCSTR lpFileName,
+									  __in     DWORD dwDesiredAccess,
+									  __in     DWORD dwShareMode,
+									  __in_opt LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+									  __in     DWORD dwCreationDisposition,
+									  __in     DWORD dwFlagsAndAttributes,
+									  __in_opt HANDLE hTemplateFile
+									  );
+HOOK_API_DLL_EXPORT HMODULE WINAPI NHLoadLibraryA(
+										__in LPCSTR lpLibFileName
+										);
 
+namespace
+{
+	APIHOOKSTRUCT g_GetLocalTimeHook = {
+		L"Kernel32.dll",
+		"GetLocalTime",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHGetLocalTime",
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
 
+	APIHOOKSTRUCT g_GetSystemTimeHook = {
+		L"Kernel32.dll",
+		"GetSystemTime",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHGetSystemTime",
+		NHGetSystemTime,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_GetSystemTimeAsFileTimeHook = {
+		L"Kernel32.dll",
+		"GetSystemTimeAsFileTime",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHGetSystemTimeAsFileTime",
+		NHGetSystemTimeAsFileTime,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_CreateProcessWHook = {
+		L"Kernel32.dll",
+		"CreateProcessW",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHCreateProcessW",
+		NHCreateProcessW,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_CreateProcessAHook = {
+		L"Kernel32.dll",
+		"CreateProcessA",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHCreateProcessA",
+		NHCreateProcessA,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_CreateThreadHook = {
+		L"Kernel32.dll",
+		"CreateThread",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHCreateThread",
+		NHCreateThread,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_CreateFileWHook = {
+		L"Kernel32.dll",
+		"CreateFileW",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHCreateFileW",
+		NHCreateFileW,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_CreateFileAHook = {
+		L"Kernel32.dll",
+		"CreateFileA",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHCreateFileA",
+		NHCreateFileA,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_LoadLibraryAHook = {
+		L"Kernel32.dll",
+		"LoadLibraryA",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHLoadLibraryA",
+		NHLoadLibraryA,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
 FARPROC WINAPI NHGetFuncAddress(HINSTANCE hInst, wchar_t* lpMod, char* lpFunc)
 {
 	HMODULE hMod;
@@ -349,7 +422,7 @@ void TimeSub1Year(SYSTEMTIME& time)
 	g_TimeProc = true;
 }
 
-DLLEXPORT VOID WINAPI NHGetLocalTime(LPSYSTEMTIME lpSystemTime)
+HOOK_API_DLL_EXPORT VOID WINAPI NHGetLocalTime(LPSYSTEMTIME lpSystemTime)
 {
 	DWORD returnAddr = 0;
 	__asm
@@ -381,7 +454,7 @@ DLLEXPORT VOID WINAPI NHGetLocalTime(LPSYSTEMTIME lpSystemTime)
 	HookWin32Api(&g_GetLocalTimeHook, HOOK_NEED_CHECK);
 }
 
-DLLEXPORT VOID WINAPI NHGetSystemTime(LPSYSTEMTIME lpSystemTime)
+HOOK_API_DLL_EXPORT VOID WINAPI NHGetSystemTime(LPSYSTEMTIME lpSystemTime)
 {
 	DWORD returnAddr = 0;
 	__asm
@@ -426,7 +499,7 @@ void HookResettimeCallBack(void* parm)
 	}
 }
 
-DLLEXPORT VOID WINAPI NHGetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTime)
+HOOK_API_DLL_EXPORT VOID WINAPI NHGetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTime)
 {
 	DWORD returnAddr = 0;
 	__asm
@@ -469,7 +542,7 @@ DLLEXPORT VOID WINAPI NHGetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTim
 	HookWin32Api(&g_GetSystemTimeAsFileTimeHook, HOOK_NEED_CHECK);
 }
 
-DLLEXPORT BOOL WINAPI NHCreateProcessW(
+HOOK_API_DLL_EXPORT BOOL WINAPI NHCreateProcessW(
 									   __in_opt    LPCWSTR lpApplicationName,
 									   __inout_opt LPWSTR lpCommandLine,
 									   __in_opt    LPSECURITY_ATTRIBUTES lpProcessAttributes,
@@ -573,7 +646,7 @@ DLLEXPORT BOOL WINAPI NHCreateProcessW(
 	return isCreate;
 }
 
-DLLEXPORT BOOL WINAPI NHCreateProcessA(
+HOOK_API_DLL_EXPORT BOOL WINAPI NHCreateProcessA(
 									   __in_opt    LPCSTR lpApplicationName,
 									   __inout_opt LPSTR lpCommandLine,
 									   __in_opt    LPSECURITY_ATTRIBUTES lpProcessAttributes,
@@ -683,7 +756,7 @@ DLLEXPORT BOOL WINAPI NHCreateProcessA(
 	return isCreate;
 }
 
-DLLEXPORT HANDLE WINAPI NHCreateThread(
+HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateThread(
 									   __in_opt  LPSECURITY_ATTRIBUTES lpThreadAttributes,
 									   __in      SIZE_T dwStackSize,
 									   __in      LPTHREAD_START_ROUTINE lpStartAddress,
@@ -742,7 +815,7 @@ DLLEXPORT HANDLE WINAPI NHCreateThread(
 	return threadHandle;
 }
 
-DLLEXPORT HANDLE WINAPI NHCreateFileW(
+HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileW(
 									  __in     LPCWSTR lpFileName,
 									  __in     DWORD dwDesiredAccess,
 									  __in     DWORD dwShareMode,
@@ -795,7 +868,7 @@ DLLEXPORT HANDLE WINAPI NHCreateFileW(
 	return file;
 }
 
-DLLEXPORT HANDLE WINAPI NHCreateFileA(
+HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileA(
 									  __in     LPCSTR lpFileName,
 									  __in     DWORD dwDesiredAccess,
 									  __in     DWORD dwShareMode,
@@ -859,15 +932,47 @@ DLLEXPORT HANDLE WINAPI NHCreateFileA(
 	//
 	HookWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
 
-	static unsigned long g_CreateFileTime = 0;
+	/*static unsigned long g_CreateFileTime = 0;
 	g_CreateFileTime ++;
 	if (g_CreateFileTime == 11)
 	{
 		void RepairR3ApiIAT();
 		RepairR3ApiIAT();
-	}
+	}*/
 
 	return file;
+}
+
+HOOK_API_DLL_EXPORT HMODULE WINAPI NHLoadLibraryA(
+			   __in LPCSTR lpLibFileName
+			   )
+{
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	wchar_t tmpbuf[4096] = {0};
+	MultiByteToWideChar(CP_ACP, NULL, lpLibFileName, -1, tmpbuf, sizeof(tmpbuf)/sizeof(wchar_t));
+
+	// restore
+	RestoreWin32Api(&g_LoadLibraryAHook, HOOK_NEED_CHECK);
+
+	HMODULE mod = ::LoadLibraryA(lpLibFileName);
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHLoadLibraryA: %s,%d,%s\r\n", modName, returnAddr, tmpbuf);
+	OutputHookLog(buf);
+
+	//
+	HookWin32Api(&g_LoadLibraryAHook, HOOK_NEED_CHECK);
+	return mod;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -881,6 +986,7 @@ void R3ApiHookInit(HMODULE hModule)
 	g_CreateThreadHook.hInst = hModule;
 	g_CreateFileWHook.hInst = hModule;
 	g_CreateFileAHook.hInst = hModule;
+	g_LoadLibraryAHook.hInst = hModule;
 
 	//HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
 	//HookWin32Api(&g_GetSystemTimeHook, HOOK_CAN_WRITE);
@@ -891,7 +997,8 @@ void R3ApiHookInit(HMODULE hModule)
 	HookWin32Api(&g_CreateThreadHook, HOOK_CAN_WRITE);
 	HookWin32Api(&g_CreateFileWHook, HOOK_CAN_WRITE);*/
 
-	HookWin32Api(&g_CreateFileAHook, HOOK_CAN_WRITE);
+	//HookWin32Api(&g_CreateFileAHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_LoadLibraryAHook, HOOK_CAN_WRITE);
 }
 
 void R3ApiHookUninit()
@@ -905,5 +1012,6 @@ void R3ApiHookUninit()
 	RestoreWin32Api(&g_CreateThreadHook, HOOK_NEED_CHECK);
 	RestoreWin32Api(&g_CreateFileWHook, HOOK_NEED_CHECK);*/
 
-	RestoreWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
+	//RestoreWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_LoadLibraryAHook, HOOK_NEED_CHECK);
 }

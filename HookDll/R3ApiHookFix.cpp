@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include <TlHelp32.h>
 #include "R3ApiHookFix.h"
 #include <string>
 #include <vector>
@@ -412,41 +411,56 @@ void R3ApiIATScanModule(MODULEENTRY32& mod, ExeModuleImportTables& output)
 	output.push_back(moduleTable);
 }
 
-HMODULE ModuleFromAddress(void* pv) 
-{
-	MEMORY_BASIC_INFORMATION mbi;
-	return ((VirtualQuery(pv,&mbi,sizeof(mbi))!=0)?(HMODULE)mbi.AllocationBase:NULL);
-}
-
 void ScanAllR3ApiModules()
 {
-	HMODULE hThisModule = ModuleFromAddress(ScanAllR3ApiModules);
-
-	// 遍历进程中所有模块
-	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,GetCurrentProcessId());
-	if(hSnapshot==INVALID_HANDLE_VALUE) return ;
-
-	MODULEENTRY32 sModItem = {sizeof(sModItem)};
-	if(::Module32First(hSnapshot,&sModItem))
+	std::vector<MODULEENTRY32> output;
+	EnumAllModule(GetCurrentProcessId(), output);
+	for(int idx=0; idx<output.size(); ++idx)
 	{
-		do
-		{
-			// 下面的判断，是排除对当前模块的API hook,一般情况下，我们会把该API hook的代码放在一个独立的dll中。
-			if(sModItem.hModule!=hThisModule)
-			{
-				// 替换模块的IAT
-				R3ApiIATScanModule(sModItem, g_apifixIATBefore);
-				R3ApiBIATScanModule(sModItem, g_apifixBIAT);
-			}
-		}
-		while(::Module32Next(hSnapshot,&sModItem));
+		MODULEENTRY32 sModItem = output[idx];
+		R3ApiIATScanModule(sModItem, g_apifixIATBefore);
+		R3ApiBIATScanModule(sModItem, g_apifixBIAT);
 	}
-
-	::CloseHandle(hSnapshot);
 
 	OutputIATFullInfo(g_apifixIATBefore);
 	OutputBIATFullInfo(g_apifixBIAT);
 }
+
+//HMODULE ModuleFromAddress(void* pv) 
+//{
+//	MEMORY_BASIC_INFORMATION mbi;
+//	return ((VirtualQuery(pv,&mbi,sizeof(mbi))!=0)?(HMODULE)mbi.AllocationBase:NULL);
+//}
+//
+//void ScanAllR3ApiModules()
+//{
+//	HMODULE hThisModule = ModuleFromAddress(ScanAllR3ApiModules);
+//
+//	// 遍历进程中所有模块
+//	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,GetCurrentProcessId());
+//	if(hSnapshot==INVALID_HANDLE_VALUE) return ;
+//
+//	MODULEENTRY32 sModItem = {sizeof(sModItem)};
+//	if(::Module32First(hSnapshot,&sModItem))
+//	{
+//		do
+//		{
+//			// 下面的判断，是排除对当前模块的API hook,一般情况下，我们会把该API hook的代码放在一个独立的dll中。
+//			if(sModItem.hModule!=hThisModule)
+//			{
+//				// 替换模块的IAT
+//				R3ApiIATScanModule(sModItem, g_apifixIATBefore);
+//				R3ApiBIATScanModule(sModItem, g_apifixBIAT);
+//			}
+//		}
+//		while(::Module32Next(hSnapshot,&sModItem));
+//	}
+//
+//	::CloseHandle(hSnapshot);
+//
+//	OutputIATFullInfo(g_apifixIATBefore);
+//	OutputBIATFullInfo(g_apifixBIAT);
+//}
 
 void R3ApiHookFixInitIAT()
 {

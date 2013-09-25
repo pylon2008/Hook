@@ -9,6 +9,7 @@
 #include "HookUtil.h"
 #include "R3ApiHook.h"
 #include "R3ApiHookFix.h"
+#include "CrackPatch.h"
 //#include <string.h>
 
 #ifdef _MANAGED
@@ -38,13 +39,13 @@ static HWND		g_hWndTag	= NULL;	//×¢ÈëµÄEXE´°Ìå¾ä±ú
 
 //////////////////////////////////////////////////////////////////////////////////////
 
-DLLEXPORT BOOL CALLBACK EnumChildWindowsProc( HWND hWnd, LPARAM lParam )
+BOOL CALLBACK EnumChildWindowsProc( HWND hWnd, LPARAM lParam )
 {
 	g_hChildren[g_numChildren++] = hWnd;
 	return TRUE;
 }
 
-DLLEXPORT void GetAllChildrenWnd(HWND hwnd)
+void GetAllChildrenWnd(HWND hwnd)
 {
 	if (hwnd != NULL)
 	{
@@ -55,20 +56,20 @@ DLLEXPORT void GetAllChildrenWnd(HWND hwnd)
 	}
 }
 
-DLLEXPORT bool FilterWnd(HWND hwnd)
+bool FilterWnd(HWND hwnd)
 {
 	return true;
 	HWND* findResult = std::find(&g_hChildren[0], &g_hChildren[g_numChildren], hwnd);
 	return findResult==&g_hChildren[g_numChildren];
 }
 
-DLLEXPORT bool FilterCode(int nCode)
+bool FilterCode(int nCode)
 {
 	return true;
 	return nCode>=0;
 }
 
-DLLEXPORT void GetWindowNameByHandle(HWND hwnd, wchar_t* dest, int destSize)
+void GetWindowNameByHandle(HWND hwnd, wchar_t* dest, int destSize)
 {
 	//HWND children = hwnd;
 	//HWND parentWnd = children;
@@ -118,7 +119,7 @@ DLLEXPORT void GetWindowNameByHandle(HWND hwnd, wchar_t* dest, int destSize)
 	CloseHandle(hSnapshot);
 }
 
-DLLEXPORT void EnumAllWindowSnapshot()
+void EnumAllWindowSnapshot()
 {
 	PROCESSENTRY32 pe;
 	pe.dwSize = sizeof( PROCESSENTRY32 );
@@ -204,7 +205,7 @@ void ProcessInjection(DWORD _proc_id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-DLLEXPORT LRESULT CALLBACK MouseProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK MouseProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -222,7 +223,7 @@ DLLEXPORT LRESULT CALLBACK MouseProc(int nCode,WPARAM wParam,LPARAM lParam)
 	return CallNextHookEx(g_hHookMouse, nCode, wParam, lParam);
 }
 
-DLLEXPORT LRESULT CALLBACK KeyboardProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK KeyboardProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -233,7 +234,7 @@ DLLEXPORT LRESULT CALLBACK KeyboardProc(int nCode,WPARAM wParam,LPARAM lParam)
 	return CallNextHookEx(g_hHookKeybord, nCode, wParam, lParam);
 }
 
-DLLEXPORT LRESULT CALLBACK KeyboardLLProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK KeyboardLLProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -248,7 +249,7 @@ DLLEXPORT LRESULT CALLBACK KeyboardLLProc(int nCode,WPARAM wParam,LPARAM lParam)
 	return CallNextHookEx(g_hHookKeybordLL, nCode, wParam, lParam);
 }
 
-DLLEXPORT LRESULT CALLBACK GetMessageProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK GetMessageProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -270,7 +271,7 @@ DLLEXPORT LRESULT CALLBACK GetMessageProc(int nCode,WPARAM wParam,LPARAM lParam)
 	return CallNextHookEx(g_hHookGetMessage, nCode, wParam, lParam);
 }
 
-DLLEXPORT LRESULT CALLBACK CallWndProcProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK CallWndProcProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -293,7 +294,7 @@ DLLEXPORT LRESULT CALLBACK CallWndProcProc(int nCode,WPARAM wParam,LPARAM lParam
 	return CallNextHookEx(g_hHookCallWndProc, nCode, wParam, lParam);
 }
 
-DLLEXPORT LRESULT CALLBACK MouseLLProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK MouseLLProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -309,7 +310,7 @@ DLLEXPORT LRESULT CALLBACK MouseLLProc(int nCode,WPARAM wParam,LPARAM lParam)
 	return CallNextHookEx(g_hHookMouseLL, nCode, wParam, lParam);
 }
 
-DLLEXPORT LRESULT CALLBACK CBTProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK CBTProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -333,7 +334,7 @@ DLLEXPORT LRESULT CALLBACK CBTProc(int nCode,WPARAM wParam,LPARAM lParam)
 	return CallNextHookEx(g_hHookCBT, nCode, wParam, lParam);
 }
 
-DLLEXPORT LRESULT CALLBACK ShellProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK ShellProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -352,7 +353,7 @@ DLLEXPORT LRESULT CALLBACK ShellProc(int nCode,WPARAM wParam,LPARAM lParam)
 	return CallNextHookEx(g_hHookShell, nCode, wParam, lParam);
 }
 
-DLLEXPORT LRESULT CALLBACK JournalRecordProc(int nCode,WPARAM wParam,LPARAM lParam)
+LRESULT CALLBACK JournalRecordProc(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	if ( FilterCode(nCode) )
 	{
@@ -536,7 +537,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,DWORD  ul_reason_for_call,LPVOID lpReserv
 
 DLLEXPORT void In(HWND hwnd)
 {
-	RepairR3Api();
+	//RepairR3Api();
+	CrackFloderEncryption();
 	return;
 
 	g_hWndTag = hwnd;

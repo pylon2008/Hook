@@ -44,7 +44,10 @@ const wchar_t* GetApplicationDir()
 	return g_AppDir;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//#define HOOK_DLL_LOG
+
+#ifdef _DEBUG
+#define HOOK_DLL_LOG
+#endif
 
 #ifdef HOOK_DLL_LOG
 namespace

@@ -3,6 +3,38 @@
 #include "HookUtil.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MemPatch(void* targetAddr, void* srcCode, void* destCode, unsigned long codeSize)
+{
+	unsigned long dwReserved = 0;
+	if (!VirtualProtect(targetAddr, codeSize, PAGE_READWRITE,&dwReserved))
+	{
+		wchar_t buf[1024] = {0};
+		swprintf(buf, L"VirtualProtect--PAGE_READWRITE: %p,%d\r\n", targetAddr, codeSize);
+		OutputHookLog(buf);
+		return;
+	}
+
+	if (memcmp(targetAddr, srcCode, codeSize)==0)
+	{
+		memcpy(targetAddr, destCode, codeSize);
+	}
+	else
+	{
+		wchar_t buf[1024] = {0};
+		swprintf(buf, L"memcmp not equal: %p,%d\r\n", targetAddr, codeSize);
+		OutputHookLog(buf);
+		return;
+	}
+
+	unsigned long dwTemp;
+	if (!VirtualProtect(targetAddr, codeSize, dwReserved, &dwTemp))
+	{
+		wchar_t buf[1024] = {0};
+		swprintf(buf, L"VirtualProtect--RESTORE: %p,%d\r\n", targetAddr, codeSize);
+		OutputHookLog(buf);
+	}
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CrackFloderEncryptionCallBack(void* parm)
 {
 	::Sleep(5000);
@@ -31,61 +63,35 @@ void CrackFloderEncryptionCallBack(void* parm)
 	swprintf(buf, L"GetModuleHandle(0): %p\r\n", exeMod);
 	OutputHookLog(buf);
 
+	// 加密窗口
 	unsigned long deltaValue = 0xAF76C;
 	char* targetAddr = (char*)exeMod + deltaValue;
-
-	char srcCode[] = {
-		0x89,
-		0x45,
-		0xf8,
-		0x83,
-		0x7d,
-		0xf8,
-		0x00,
-		0x0f,
-		0x85
-	};
-	char destCode[] = {
-		0x89,
-		0x65,
-		0xf8,
-		0x83,
-		0x7d,
-		0xf8,
-		0x00,
-		0x0f,
-		0x85
-	};
-
-	unsigned long dwReserved = 0;
+	char srcCode[] = {0x89,0x45,0xf8,0x83,0x7d,0xf8,0x00,0x0f,0x85};
+	char destCode[] = {0x89,0x65,0xf8,0x83,0x7d,0xf8,0x00,0x0f,0x85};
 	unsigned long codeSize = sizeof(srcCode);
-	if (!VirtualProtect(targetAddr, codeSize, PAGE_READWRITE,&dwReserved))
-	{
-		wchar_t buf[1024] = {0};
-		swprintf(buf, L"VirtualProtect--PAGE_READWRITE: %p,%d\r\n", targetAddr, codeSize);
-		OutputHookLog(buf);
-		return;
-	}
+	MemPatch(targetAddr, srcCode, destCode, codeSize);
 
-	if (memcmp(targetAddr, srcCode, codeSize)==0)
-	{
-		memcpy(targetAddr, destCode, codeSize);
-	}
-	else
-	{
-		wchar_t buf[1024] = {0};
-		swprintf(buf, L"memcmp not equal: %p,%d\r\n", targetAddr, codeSize);
-		OutputHookLog(buf);
-		return;
-	}
+	// 	解密窗口密码输入框
+	unsigned long deltaValue2 = 0xD22C0;
+	char* targetAddr2 = (char*)exeMod + deltaValue2;
+	char srcCode2[] = {0x89,0x45,0xf4,0x83,0x7d,0xf4,0x00,0x0f,0x85};
+	char destCode2[] = {0x89,0x65,0xf4,0x83,0x7d,0xf4,0x00,0x0f,0x85};
+	unsigned long codeSize2 = sizeof(srcCode2);
+	MemPatch(targetAddr2, srcCode2, destCode2, codeSize2);
 
-	unsigned long dwTemp;
-	if (!VirtualProtect(targetAddr, codeSize, dwReserved, &dwTemp))
-	{
-		wchar_t buf[1024] = {0};
-		swprintf(buf, L"VirtualProtect--RESTORE: %p,%d\r\n", targetAddr, codeSize);
-		OutputHookLog(buf);
-	}
+	// 	解密窗口解密按钮
+	unsigned long deltaValue3 = 0xD2436;
+	char* targetAddr3 = (char*)exeMod + deltaValue3;
+	char srcCode3[] = {0x89,0x45,0xfc,0x83,0x7d,0xfc,0x1e,0x0f,0x8c};
+	char destCode3[] = {0x89,0x4d,0xfc,0x83,0x7d,0xfc,0x1e,0x0f,0x8c};
+	unsigned long codeSize3 = sizeof(srcCode2);
+	MemPatch(targetAddr3, srcCode3, destCode3, codeSize3);
+
+
+
+
+
+
 
 	wchar_t srcDll[256] = {0};
 	wcscpy(srcDll, GetApplicationDir());

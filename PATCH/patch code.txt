@@ -1,0 +1,44 @@
+// ª„±‡√˜Œƒ
+004B1430  /$  83EC 40       SUB ESP,40
+004B1433  |.  C70424 6B6572>MOV DWORD PTR SS:[ESP],6E72656B
+004B143A  |.  90            NOP
+004B143B  |.  C74424 04 656>MOV DWORD PTR SS:[ESP+4],32336C65
+004B1443  |.  C74424 08 2E6>MOV DWORD PTR SS:[ESP+8],6C6C642E
+004B144B  |.  C74424 0C 000>MOV DWORD PTR SS:[ESP+C],10000000
+004B1453  |.  54            PUSH ESP                                 ; /pModule
+004B1454  |.  E8 DDC70A00   CALL <JMP.&KERNEL32.GetModuleHandleA>    ; \GetModuleHandleA			// CALL DWORD PTR DS:[600839]
+004B1459  |.  C70424 4C6F61>MOV DWORD PTR SS:[ESP],64616F4C
+004B1460  |.  90            NOP
+004B1461  |.  C74424 04 4C6>MOV DWORD PTR SS:[ESP+4],7262694C
+004B1469  |.  C74424 08 617>MOV DWORD PTR SS:[ESP+8],41797261
+004B1471  |.  C74424 0C 000>MOV DWORD PTR SS:[ESP+C],10000000
+004B1479  |.  54            PUSH ESP                                 ; /ProcNameOrOrdinal
+004B147A  |.  50            PUSH EAX                                 ; |hModule
+004B147B  |.  E8 C2C70A00   CALL <JMP.&KERNEL32.GetProcAddress>      ; \GetProcAddress
+004B1480  |.  C70424 70796C>MOV DWORD PTR SS:[ESP],2E6C7970
+004B1487  |.  90            NOP
+004B1488  |.  C74424 04 646>MOV DWORD PTR SS:[ESP+4],6C6C64
+004B1490  |.  54            PUSH ESP
+004B1491  |.  FFD0          CALL EAX
+004B1493  |.  C70424 496E00>MOV DWORD PTR SS:[ESP],6E49
+004B149A  |.  90            NOP
+004B149B  |.  54            PUSH ESP                                 ; /ProcNameOrOrdinal
+004B149C  |.  50            PUSH EAX                                 ; |hModule
+004B149D  |.  E8 A0C70A00   CALL <JMP.&KERNEL32.GetProcAddress>      ; \GetProcAddress
+004B14A2  |.  FFD0          CALL EAX
+004B14A4  |.  83C4 40       ADD ESP,40
+004B14A7  |.  6A 00         PUSH 0                                   ; /pModule = NULL
+004B14A9  |.  E8 88C70A00   CALL <JMP.&KERNEL32.GetModuleHandleA>    ; \GetModuleHandleA
+004B14AE  \.  C2 0400       RETN 4
+
+// ∂˛Ω¯÷∆
+004B1430  83 EC 40 C7 04 24 6B 65 72 6E 90 C7 44 24 04 65  ÉÏ@?$kernê«D$e
+004B1440  6C 33 32 C7 44 24 08 2E 64 6C 6C C7 44 24 0C 00  l32«D$.dll«D$..
+004B1450  00 00 10 54 E8 DD C7 0A 00 C7 04 24 4C 6F 61 64  ..TË›?.?$Load
+004B1460  90 C7 44 24 04 4C 69 62 72 C7 44 24 08 61 72 79  ê«D$Libr«D$ary
+004B1470  41 C7 44 24 0C 00 00 00 10 54 50 E8 C2 C7 0A 00  A«D$....TPË¬?.
+004B1480  C7 04 24 70 79 6C 2E 90 C7 44 24 04 64 6C 6C 00  ?$pyl.ê«D$dll.
+004B1490  54 FF D0 C7 04 24 49 6E 00 00 90 54 50 E8 A0 C7  Tˇ–«$In..êTPË†
+004B14A0  0A 00 FF D0 83 C4 40 6A 00 E8 88 C7 0A 00 C2 04  ..ˇ–Éƒ@j.Ëà?.?
+004B14B0  00                                               .
+

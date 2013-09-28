@@ -5,4 +5,6 @@
 // http://dosame.com/Folder/
 void CrackFloderEncryption();
 
+// ÃÏ¿«–«º”√‹»Ìº˛≤π∂°
+void CrackTianLangXingEncryption();
 #endif

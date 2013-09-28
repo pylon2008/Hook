@@ -475,8 +475,8 @@ void RepairR3ApiIAT()
 
 void R3ApiHookFixInit()
 {
-	R3ApiHookFixInitInline();
-	R3ApiHookFixInitIAT();
+	//R3ApiHookFixInitInline();
+	//R3ApiHookFixInitIAT();
 }
 
 void R3ApiHookFixUninit()
@@ -486,6 +486,6 @@ void R3ApiHookFixUninit()
 
 void RepairR3Api()
 {
-	RepairR3ApiInline();
-	RepairR3ApiIAT();
+	//RepairR3ApiInline();
+	//RepairR3ApiIAT();
 }

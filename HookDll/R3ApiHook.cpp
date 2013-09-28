@@ -898,13 +898,15 @@ HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileA(
 
 	char realCreateFile[1024] = {0};
 	strcpy(realCreateFile, lpFileName);
-	//int delta = strcmp(modName, lpFileName);
-	//int delta = wcscmp(modName, tmpbuf);
-	//if (delta == 0)
+	static unsigned long g_SelfOpenTime = 0;
 	if( strstr(realCreateFile, "_破解") != 0 )
 	{
-		char* exe = strstr(realCreateFile, ".exe");
-		memcpy(exe-5, ".exe", 5);
+		if(g_SelfOpenTime == 0)
+		{
+			char* exe = strstr(realCreateFile, ".exe");
+			memcpy(exe-5, ".exe", 5);
+		}
+		g_SelfOpenTime++;
 	}
 
 	HANDLE file = ::CreateFileA(realCreateFile, dwDesiredAccess, dwShareMode, lpSecurityAttributes, 
@@ -975,12 +977,19 @@ HOOK_API_DLL_EXPORT HMODULE WINAPI NHLoadLibraryA(
 	HookWin32Api(&g_LoadLibraryAHook, HOOK_NEED_CHECK);
 
 	// 破解加密软件
-	const char* p = strstr(lpLibFileName, "\E_4\user32.dll");
+	/*
 	if (strstr(lpLibFileName, "E_4") != 0
-		&& strstr(lpLibFileName, "RegEx.fnr"))
+		&& strstr(lpLibFileName, "RegEx.fnr")!=0)
 	{
 		void DoCrackFloderEncryption();
 		DoCrackFloderEncryption();
+	}
+	*/
+
+	if (strstr(lpLibFileName, "Windows") != 0
+		&& strstr(lpLibFileName, "ai32fplaydk.dll")!=0)
+	{
+		CrackTianLangXingEncryption();
 	}
 	return mod;
 }
@@ -1007,7 +1016,7 @@ void R3ApiHookInit(HMODULE hModule)
 	HookWin32Api(&g_CreateThreadHook, HOOK_CAN_WRITE);
 	HookWin32Api(&g_CreateFileWHook, HOOK_CAN_WRITE);*/
 
-	//HookWin32Api(&g_CreateFileAHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_CreateFileAHook, HOOK_CAN_WRITE);
 	HookWin32Api(&g_LoadLibraryAHook, HOOK_CAN_WRITE);
 }
 
@@ -1022,6 +1031,6 @@ void R3ApiHookUninit()
 	RestoreWin32Api(&g_CreateThreadHook, HOOK_NEED_CHECK);
 	RestoreWin32Api(&g_CreateFileWHook, HOOK_NEED_CHECK);*/
 
-	//RestoreWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
 	RestoreWin32Api(&g_LoadLibraryAHook, HOOK_NEED_CHECK);
 }

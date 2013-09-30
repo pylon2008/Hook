@@ -342,6 +342,14 @@ void CRCMemCheckRepair(HMODULE exeMod)
 		callToAddr2, callToCodeSrc2, callToCodeDest2,callToSize2);
 	*/
 
+	// 断点检查第一处
+	//0042A498
+	unsigned long deltaValue4 = 0x2A499;
+	char* targetAddr4 = (char*)exeMod + deltaValue4;
+	char srcCode4[] = {0xC0};
+	char destCode4[] = {0xC9};
+	unsigned long codeSize4 = sizeof(srcCode4);
+	MemPatchReplace(targetAddr4, srcCode4, destCode4, codeSize4);
 }
 
 void DoCrackTianLangXingEncryption()

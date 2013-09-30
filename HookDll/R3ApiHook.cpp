@@ -88,12 +88,24 @@ HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileA(
 									  __in     DWORD dwFlagsAndAttributes,
 									  __in_opt HANDLE hTemplateFile
 									  );
+HOOK_API_DLL_EXPORT BOOL WINAPI NHReadFile(
+	__in        HANDLE hFile,
+	__out_bcount_part(nNumberOfBytesToRead, *lpNumberOfBytesRead) LPVOID lpBuffer,
+	__in        DWORD nNumberOfBytesToRead,
+	__out_opt   LPDWORD lpNumberOfBytesRead,
+	__inout_opt LPOVERLAPPED lpOverlapped
+	);
+HOOK_API_DLL_EXPORT BOOL WINAPI NHCloseHandle(
+	__in HANDLE hObject
+	);
 HOOK_API_DLL_EXPORT HMODULE WINAPI NHLoadLibraryA(
 										__in LPCSTR lpLibFileName
 										);
 
 namespace
 {
+	LPTOP_LEVEL_EXCEPTION_FILTER g_OldTopLevelExceptionFilter;
+
 	APIHOOKSTRUCT g_GetLocalTimeHook = {
 		L"Kernel32.dll",
 		"GetLocalTime",
@@ -201,6 +213,34 @@ namespace
 		NULL,
 		"NHCreateFileA",
 		NHCreateFileA,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_ReadFileHook = {
+		L"Kernel32.dll",
+		"ReadFile",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHReadFile",
+		NHReadFile,
+		{0, 0, 0, 0, 0, 0, 0},
+		0,
+		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
+	};
+
+	APIHOOKSTRUCT g_CloseHandleHook = {
+		L"Kernel32.dll",
+		"CloseHandle",
+		0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		"NHCloseHandle",
+		NHCloseHandle,
 		{0, 0, 0, 0, 0, 0, 0},
 		0,
 		{0XFF, 0X15, 0XFA, 0X13, 0XF3, 0XBF, 0X33}
@@ -901,7 +941,7 @@ HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileA(
 	static unsigned long g_SelfOpenTime = 0;
 	if( strstr(realCreateFile, "_ÆÆ½â") != 0 )
 	{
-		if(g_SelfOpenTime == 0)
+		if(1/*g_SelfOpenTime == 0*/)
 		{
 			char* exe = strstr(realCreateFile, ".exe");
 			memcpy(exe-5, ".exe", 5);
@@ -915,8 +955,8 @@ HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileA(
 	wchar_t tmpbuf2[4096] = {0};
 	MultiByteToWideChar(CP_ACP, NULL, realCreateFile, -1, tmpbuf2, sizeof(tmpbuf2)/sizeof(wchar_t));
 	wchar_t buf[1024] = {0};
-	swprintf(buf, L"NHCreateFileA: %s,%d,", modName, returnAddr);
-	swprintf(buf+wcslen(buf), L"%s,%s,%d,%d,%d,%d,%p,", tmpbuf, tmpbuf2, dwDesiredAccess, 
+	swprintf(buf, L"NHCreateFileA: %s,%d,%p,", modName, returnAddr,file);
+	swprintf(buf+wcslen(buf), L"%s,%s,%p,%p,%p,%p,%p,", tmpbuf, tmpbuf2, dwDesiredAccess, 
 		dwShareMode, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
 
 	// lpThreadId
@@ -944,6 +984,76 @@ HOOK_API_DLL_EXPORT HANDLE WINAPI NHCreateFileA(
 	}*/
 
 	return file;
+}
+
+HOOK_API_DLL_EXPORT BOOL WINAPI NHCloseHandle(
+			__in HANDLE hObject
+			)
+{
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	// restore
+	RestoreWin32Api(&g_CloseHandleHook, HOOK_NEED_CHECK);
+
+	BOOL isClose = ::CloseHandle(hObject);
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHCloseHandle: %s,%p,%p,%d\r\n", modName, returnAddr, hObject, isClose);
+	OutputHookLog(buf);
+
+	//
+	HookWin32Api(&g_CloseHandleHook, HOOK_NEED_CHECK);
+
+	return isClose;
+}
+
+HOOK_API_DLL_EXPORT BOOL WINAPI NHReadFile(
+	__in        HANDLE hFile,
+	__out_bcount_part(nNumberOfBytesToRead, *lpNumberOfBytesRead) LPVOID lpBuffer,
+	__in        DWORD nNumberOfBytesToRead,
+	__out_opt   LPDWORD lpNumberOfBytesRead,
+	__inout_opt LPOVERLAPPED lpOverlapped
+	)
+{
+	DWORD returnAddr = 0;
+	__asm
+	{
+		MOV EAX,DWORD PTR SS:[EBP+4]
+		MOV returnAddr,EAX
+	}
+	HMODULE hmod = 0;
+	::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)returnAddr, &hmod);
+	wchar_t modName[1024] = {0};
+	::GetModuleFileNameW(hmod, modName, sizeof(modName));
+
+	// restore
+	RestoreWin32Api(&g_ReadFileHook, HOOK_NEED_CHECK);
+
+	DWORD realNumberOfBytesRead = 0;
+	if (lpNumberOfBytesRead == 0)
+	{
+		lpNumberOfBytesRead = &realNumberOfBytesRead;
+	}
+	DWORD low = ::SetFilePointer(hFile, 0, NULL, FILE_CURRENT);
+	BOOL isRead = ::ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf, L"NHReadFile: %s,%p,%p,%d,%p,%p,%p,%p,%p\r\n", modName, returnAddr,hFile, isRead, low, lpBuffer, nNumberOfBytesToRead, *lpNumberOfBytesRead, lpOverlapped);
+	OutputHookLog(buf);
+
+	//
+	HookWin32Api(&g_ReadFileHook, HOOK_NEED_CHECK);
+
+	return isRead;
 }
 
 HOOK_API_DLL_EXPORT HMODULE WINAPI NHLoadLibraryA(
@@ -986,7 +1096,7 @@ HOOK_API_DLL_EXPORT HMODULE WINAPI NHLoadLibraryA(
 	}
 	*/
 
-	if (strstr(lpLibFileName, "Windows") != 0
+	if ((strstr(lpLibFileName, "Windows") != 0 || strstr(lpLibFileName, "WINDOWS") != 0)
 		&& strstr(lpLibFileName, "ai32fplaydk.dll")!=0)
 	{
 		CrackTianLangXingEncryption();
@@ -995,6 +1105,60 @@ HOOK_API_DLL_EXPORT HMODULE WINAPI NHLoadLibraryA(
 }
 
 //////////////////////////////////////////////////////////////////////////////////
+__callback LONG WINAPI MyUnhandledExceptionFilter(__in struct _EXCEPTION_POINTERS *ExceptionInfo )
+{
+	wchar_t* lineBefore = L"====";
+	wchar_t buf[10240] = {0};
+	PEXCEPTION_RECORD excep = ExceptionInfo->ExceptionRecord;
+	swprintf(buf+wcslen(buf), L"PEXCEPTION_RECORD: %s\r\n", "");
+	swprintf(buf+wcslen(buf), L"%s, excep->ExceptionCode:%p\r\n", lineBefore, excep->ExceptionCode);
+	swprintf(buf+wcslen(buf), L"%s, excep->ExceptionFlags:%p\r\n", lineBefore, excep->ExceptionFlags);
+	swprintf(buf+wcslen(buf), L"%s, excep->ExceptionAddress:%p\r\n", lineBefore, excep->ExceptionAddress);
+	swprintf(buf+wcslen(buf), L"%s, excep->NumberParameters:%p\r\n", lineBefore, excep->NumberParameters);
+
+	PCONTEXT content = ExceptionInfo->ContextRecord;
+	swprintf(buf+wcslen(buf), L"PCONTEXT: %s\r\n", "");
+	swprintf(buf+wcslen(buf), L"%s, content->ContextFlags:%p\r\n", lineBefore, content->ContextFlags);
+	swprintf(buf+wcslen(buf), L"%s, content->Dr0:%p\r\n", lineBefore, content->Dr0);
+	swprintf(buf+wcslen(buf), L"%s, content->Dr1:%p\r\n", lineBefore, content->Dr1);
+	swprintf(buf+wcslen(buf), L"%s, content->Dr2:%p\r\n", lineBefore, content->Dr2);
+	swprintf(buf+wcslen(buf), L"%s, content->Dr3:%p\r\n", lineBefore, content->Dr3);
+	swprintf(buf+wcslen(buf), L"%s, content->Dr6:%p\r\n", lineBefore, content->Dr6);
+	swprintf(buf+wcslen(buf), L"%s, content->Dr7:%p\r\n", lineBefore, content->Dr7);
+
+	swprintf(buf+wcslen(buf), L"%s, content->SegGs:%p\r\n", lineBefore, content->SegGs);
+	swprintf(buf+wcslen(buf), L"%s, content->SegFs:%p\r\n", lineBefore, content->SegFs);
+	swprintf(buf+wcslen(buf), L"%s, content->SegEs:%p\r\n", lineBefore, content->SegEs);
+	swprintf(buf+wcslen(buf), L"%s, content->SegDs:%p\r\n", lineBefore, content->SegDs);
+
+	swprintf(buf+wcslen(buf), L"%s, content->Edi:%p\r\n", lineBefore, content->Edi);
+	swprintf(buf+wcslen(buf), L"%s, content->Esi:%p\r\n", lineBefore, content->Esi);
+	swprintf(buf+wcslen(buf), L"%s, content->Ebx:%p\r\n", lineBefore, content->Ebx);
+	swprintf(buf+wcslen(buf), L"%s, content->Edx:%p\r\n", lineBefore, content->Edx);
+	swprintf(buf+wcslen(buf), L"%s, content->Ecx:%p\r\n", lineBefore, content->Ecx);
+	swprintf(buf+wcslen(buf), L"%s, content->Eax:%p\r\n", lineBefore, content->Eax);
+
+	swprintf(buf+wcslen(buf), L"%s, content->Ebp:%p\r\n", lineBefore, content->Ebp);
+	swprintf(buf+wcslen(buf), L"%s, content->Eip:%p\r\n", lineBefore, content->Eip);
+	swprintf(buf+wcslen(buf), L"%s, content->SegCs:%p\r\n", lineBefore, content->SegCs);
+	swprintf(buf+wcslen(buf), L"%s, content->EFlags:%p\r\n", lineBefore, content->EFlags);
+	swprintf(buf+wcslen(buf), L"%s, content->Esp:%p\r\n", lineBefore, content->Esp);
+	swprintf(buf+wcslen(buf), L"%s, content->SegSs:%p\r\n", lineBefore, content->SegSs);
+	OutputHookLog(buf);
+
+	return g_OldTopLevelExceptionFilter(ExceptionInfo);
+}
+
+void HookUnhandleredException()
+{
+	LPTOP_LEVEL_EXCEPTION_FILTER newHandler = MyUnhandledExceptionFilter;
+	g_OldTopLevelExceptionFilter = ::SetUnhandledExceptionFilter(newHandler);
+
+	wchar_t buf[1024] = {0};
+	swprintf(buf+wcslen(buf), L"g_OldTopLevelExceptionFilter: %p\r\n", g_OldTopLevelExceptionFilter);
+	OutputHookLog(buf);
+}
+
 void R3ApiHookInit(HMODULE hModule)
 {
 	g_GetLocalTimeHook.hInst = hModule;
@@ -1005,6 +1169,8 @@ void R3ApiHookInit(HMODULE hModule)
 	g_CreateThreadHook.hInst = hModule;
 	g_CreateFileWHook.hInst = hModule;
 	g_CreateFileAHook.hInst = hModule;
+	g_ReadFileHook.hInst = hModule;
+	g_CloseHandleHook.hInst = hModule;
 	g_LoadLibraryAHook.hInst = hModule;
 
 	//HookWin32Api(&g_GetLocalTimeHook, HOOK_CAN_WRITE);
@@ -1017,7 +1183,11 @@ void R3ApiHookInit(HMODULE hModule)
 	HookWin32Api(&g_CreateFileWHook, HOOK_CAN_WRITE);*/
 
 	HookWin32Api(&g_CreateFileAHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_ReadFileHook, HOOK_CAN_WRITE);
+	HookWin32Api(&g_CloseHandleHook, HOOK_CAN_WRITE);
 	HookWin32Api(&g_LoadLibraryAHook, HOOK_CAN_WRITE);
+
+	HookUnhandleredException();
 }
 
 void R3ApiHookUninit()
@@ -1032,5 +1202,7 @@ void R3ApiHookUninit()
 	RestoreWin32Api(&g_CreateFileWHook, HOOK_NEED_CHECK);*/
 
 	RestoreWin32Api(&g_CreateFileAHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_ReadFileHook, HOOK_NEED_CHECK);
+	RestoreWin32Api(&g_CloseHandleHook, HOOK_NEED_CHECK);
 	RestoreWin32Api(&g_LoadLibraryAHook, HOOK_NEED_CHECK);
 }
